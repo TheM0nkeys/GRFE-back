@@ -8,6 +8,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.List;
@@ -54,6 +56,28 @@ public class GlobalExceptionHandler {
                 detalhes
         );
         return ResponseEntity.badRequest().body(erro);
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ErroResponse> handleBadCredentials(BadCredentialsException ex) {
+        log.warn("Tentativa de login com credenciais inválidas");
+
+        ErroResponse erro = ErroResponse.of(
+                HttpStatus.UNAUTHORIZED.value(),
+                "Login ou senha inválidos"
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(erro);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErroResponse> handleAccessDenied(AccessDeniedException ex) {
+        log.warn("Acesso negado: {}", ex.getMessage());
+
+        ErroResponse erro = ErroResponse.of(
+                HttpStatus.FORBIDDEN.value(),
+                "Você não tem permissão para acessar este recurso"
+        );
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(erro);
     }
 
     @ExceptionHandler(Exception.class)
