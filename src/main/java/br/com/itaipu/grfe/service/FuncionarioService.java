@@ -18,7 +18,7 @@ import java.util.Set;
 
 @Service
 @Transactional(readOnly = true)
-public class FuncionarioService {
+public class  FuncionarioService {
 
     private static final Logger log = LoggerFactory.getLogger(FuncionarioService.class);
 

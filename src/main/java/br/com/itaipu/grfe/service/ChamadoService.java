@@ -8,6 +8,7 @@ import br.com.itaipu.grfe.entity.Funcionario;
 import br.com.itaipu.grfe.entity.enums.StatusChamado;
 import br.com.itaipu.grfe.exception.EntidadeNaoEncontradaException;
 import br.com.itaipu.grfe.repository.ChamadoRepository;
+import br.com.itaipu.grfe.repository.EscalaRepository;                               // NOVO
 import br.com.itaipu.grfe.repository.EspecialidadesRepository;
 import br.com.itaipu.grfe.repository.FuncionarioRepository;
 import br.com.itaipu.grfe.specification.ChamadoSpecification;
@@ -28,13 +29,15 @@ public class ChamadoService {
     private final ChamadoRepository chamadoRepository;
     private final EspecialidadesRepository especialidadesRepository;
     private final FuncionarioRepository funcionarioRepository;
-
+    private final EscalaRepository escalaRepository;
     public ChamadoService(ChamadoRepository chamadoRepository,
                           EspecialidadesRepository especialidadesRepository,
-                          FuncionarioRepository funcionarioRepository) {
+                          FuncionarioRepository funcionarioRepository,
+                          EscalaRepository escalaRepository) {
         this.chamadoRepository = chamadoRepository;
         this.especialidadesRepository = especialidadesRepository;
         this.funcionarioRepository = funcionarioRepository;
+        this.escalaRepository = escalaRepository;
     }
 
     public List<ChamadoResponse> listar(StatusChamado status,
@@ -136,6 +139,15 @@ public class ChamadoService {
             throw new IllegalArgumentException(
                     "O plantonista informado não possui a especialidade do chamado."
             );
+        }
+
+        if (!escalaRepository.plantonistaEmEscala(
+                especialidade.getId(), plantonista.getId(), request.dataHoraAcionamento())) {
+            log.warn("Plantonista fora de escala: plantonistaId={}, especialidadeId={}, dataHoraAcionamento={}",
+                    plantonista.getId(), especialidade.getId(), request.dataHoraAcionamento());
+
+            throw new IllegalArgumentException(
+                    "O plantonista informado não está em escala para esta especialidade na data/hora do acionamento.");
         }
 
         Funcionario usuarioResponsavel = funcionarioRepository.findById(request.usuarioResponsavelId())
