@@ -21,9 +21,21 @@ public class ServiceNowController {
     public ResponseEntity<ServiceNowIncidentResponse> criarIncidente(
             @RequestBody ServiceNowIncidentRequest request) {
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(serviceNowService.criarIncidente(request));
+        try {
+
+            ServiceNowIncidentResponse response =
+                    serviceNowService.criarIncidente(request);
+
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(response);
+
+        } catch (Exception e) {
+
+            return ResponseEntity
+                    .status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .build();
+        }
     }
 
     @PatchMapping("/incidentes/{sysId}")
@@ -31,8 +43,18 @@ public class ServiceNowController {
             @PathVariable String sysId,
             @RequestBody ServiceNowIncidentRequest request) {
 
-        return ResponseEntity.ok(
-                serviceNowService.atualizarIncidente(sysId, request)
-        );
+        try {
+
+            ServiceNowIncidentResponse response =
+                    serviceNowService.atualizarIncidente(sysId, request);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+
+            return ResponseEntity
+                    .status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .build();
+        }
     }
 }

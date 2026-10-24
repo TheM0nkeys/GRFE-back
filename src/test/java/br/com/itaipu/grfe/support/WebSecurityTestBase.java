@@ -14,8 +14,10 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.ActiveProfiles;
 
 @WebMvcTest
+@ActiveProfiles("security-test")
 @ContextConfiguration(classes = {
         AuthController.class,
         ProbeController.class,

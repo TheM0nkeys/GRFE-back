@@ -1,13 +1,14 @@
 package br.com.itaipu.grfe.support;
 
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
-@RequestMapping
-@ResponseBody
+@Profile("security-test")
+@RestController
 public class ProbeController {
 
     @GetMapping("/teste/protegido")
