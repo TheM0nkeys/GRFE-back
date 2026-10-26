@@ -164,6 +164,73 @@ class ChamadoServiceTest {
         verify(chamadoRepository, never()).save(any());
     }
 
+    @Test
+    void listar_mapeiaResultados() {
+        Chamado chamado = chamadoExistente();
+        when(chamadoRepository.findAll(org.mockito.ArgumentMatchers.<org.springframework.data.jpa.domain.Specification<Chamado>>any()))
+                .thenReturn(java.util.List.of(chamado));
+
+        var resposta = chamadoService.listar(
+                StatusChamado.ABERTO, 10L, 20L, null, null,
+                MOMENTO.minusDays(1), MOMENTO.plusDays(1));
+
+        assertThat(resposta).hasSize(1);
+        assertThat(resposta.get(0).especialidadeNome()).isEqualTo("Redes");
+    }
+
+    @Test
+    void buscarPorId_comChamadoExistente_retornaResposta() {
+        when(chamadoRepository.findById(1L)).thenReturn(Optional.of(chamadoExistente()));
+
+        assertThat(chamadoService.buscarPorId(1L).id()).isEqualTo(1L);
+    }
+
+    @Test
+    void atualizar_comChamadoExistente_atualizaDados() {
+        Chamado chamado = chamadoExistente();
+        ChamadoRequest request = new ChamadoRequest(
+                MOMENTO.plusHours(1), 10L, 20L, 30L,
+                "Novo motivo", "INC-999", StatusChamado.FECHADO);
+        prepararPlantonista();
+        when(escalaRepository.plantonistaEmEscala(10L, 20L, MOMENTO.plusHours(1))).thenReturn(true);
+        when(funcionarioRepository.findById(30L)).thenReturn(Optional.of(responsavel));
+        when(chamadoRepository.findById(1L)).thenReturn(Optional.of(chamado));
+        when(chamadoRepository.save(chamado)).thenReturn(chamado);
+
+        ChamadoResponse resposta = chamadoService.atualizar(1L, request);
+
+        assertThat(resposta.motivo()).isEqualTo("Novo motivo");
+        assertThat(resposta.numeroIncidente()).isEqualTo("INC-999");
+        assertThat(resposta.status()).isEqualTo(StatusChamado.FECHADO);
+    }
+
+    @Test
+    void atualizar_comChamadoInexistente_lancaNaoEncontrado() {
+        when(chamadoRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> chamadoService.atualizar(99L, request()))
+                .isInstanceOf(EntidadeNaoEncontradaException.class);
+        verify(especialidadesRepository, never()).findById(any());
+    }
+
+    @Test
+    void deletar_comChamadoExistente_removeRegistro() {
+        when(chamadoRepository.existsById(1L)).thenReturn(true);
+
+        chamadoService.deletar(1L);
+
+        verify(chamadoRepository).deleteById(1L);
+    }
+
+    @Test
+    void deletar_comChamadoInexistente_lancaNaoEncontrado() {
+        when(chamadoRepository.existsById(99L)).thenReturn(false);
+
+        assertThatThrownBy(() -> chamadoService.deletar(99L))
+                .isInstanceOf(EntidadeNaoEncontradaException.class);
+        verify(chamadoRepository, never()).deleteById(any());
+    }
+
     private void prepararPlantonista() {
         when(especialidadesRepository.findById(10L)).thenReturn(Optional.of(especialidade));
         when(funcionarioRepository.findById(20L)).thenReturn(Optional.of(plantonista));

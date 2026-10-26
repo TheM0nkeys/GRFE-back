@@ -5,6 +5,7 @@ import br.com.itaipu.grfe.dto.response.EscalaResponse;
 import br.com.itaipu.grfe.entity.Escala;
 import br.com.itaipu.grfe.entity.Especialidades;
 import br.com.itaipu.grfe.entity.Funcionario;
+import br.com.itaipu.grfe.exception.EntidadeNaoEncontradaException;
 import br.com.itaipu.grfe.repository.EscalaRepository;
 import br.com.itaipu.grfe.repository.EspecialidadesRepository;
 import br.com.itaipu.grfe.repository.FuncionarioRepository;
@@ -156,6 +157,74 @@ class EscalaServiceTest {
                 .hasMessage("O funcionário informado não possui a especialidade selecionada.");
 
         verify(escalaRepository, never()).save(any(Escala.class));
+    }
+
+    @Test
+    void listarTodas_mapeiaEscalas() {
+        Escala escala = new Escala();
+        escala.setId(1L);
+        escala.setDataHoraInicio(INICIO);
+        escala.setDataHoraFim(FIM);
+        escala.setEspecialidade(especialidade);
+        escala.setFuncionario(funcionario);
+        when(escalaRepository.findAll()).thenReturn(java.util.List.of(escala));
+
+        var resposta = escalaService.listarTodas();
+
+        assertThat(resposta).hasSize(1);
+        assertThat(resposta.get(0).especialidadeId()).isEqualTo(10L);
+    }
+
+    @Test
+    void buscarPorId_comEscalaInexistente_lancaNaoEncontrada() {
+        when(escalaRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> escalaService.buscarPorId(99L))
+                .isInstanceOf(EntidadeNaoEncontradaException.class);
+    }
+
+    @Test
+    void criar_comEspecialidadeInexistente_lancaNaoEncontrada() {
+        when(especialidadesRepository.findById(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> escalaService.criar(request(INICIO, FIM)))
+                .isInstanceOf(EntidadeNaoEncontradaException.class);
+        verify(funcionarioRepository, never()).findById(any());
+    }
+
+    @Test
+    void criar_comFuncionarioInexistente_lancaNaoEncontrado() {
+        when(especialidadesRepository.findById(10L)).thenReturn(Optional.of(especialidade));
+        when(funcionarioRepository.findById(20L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> escalaService.criar(request(INICIO, FIM)))
+                .isInstanceOf(EntidadeNaoEncontradaException.class);
+    }
+
+    @Test
+    void atualizar_comEscalaInexistente_lancaNaoEncontrada() {
+        when(escalaRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> escalaService.atualizar(99L, request(INICIO, FIM)))
+                .isInstanceOf(EntidadeNaoEncontradaException.class);
+    }
+
+    @Test
+    void deletar_comEscalaExistente_removeRegistro() {
+        when(escalaRepository.existsById(1L)).thenReturn(true);
+
+        escalaService.deletar(1L);
+
+        verify(escalaRepository).deleteById(1L);
+    }
+
+    @Test
+    void deletar_comEscalaInexistente_naoRemoveRegistro() {
+        when(escalaRepository.existsById(1L)).thenReturn(false);
+
+        assertThatThrownBy(() -> escalaService.deletar(1L))
+                .isInstanceOf(EntidadeNaoEncontradaException.class);
+        verify(escalaRepository, never()).deleteById(any());
     }
 
     private void prepararVinculos() {

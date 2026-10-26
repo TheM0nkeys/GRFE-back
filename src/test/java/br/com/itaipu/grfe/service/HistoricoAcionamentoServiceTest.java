@@ -1,6 +1,7 @@
 package br.com.itaipu.grfe.service;
 
 import br.com.itaipu.grfe.dto.response.HistoricoAcionamentoResponse;
+import br.com.itaipu.grfe.dto.request.HistoricoAcionamentoRequest;
 import br.com.itaipu.grfe.entity.Chamado;
 import br.com.itaipu.grfe.entity.Funcionario;
 import br.com.itaipu.grfe.entity.HistoricoAcionamento;
@@ -23,6 +24,9 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class HistoricoAcionamentoServiceTest {
@@ -63,6 +67,49 @@ class HistoricoAcionamentoServiceTest {
                 .hasMessage("Acionamento não encontrado: 404");
     }
 
+    @Test
+    void registrar_comRelacoesExistentes_salvaEAssociaHistorico() {
+        Chamado chamado = chamado(5L);
+        Funcionario autor = funcionario(7L, "Ana");
+        HistoricoAcionamentoRequest request = new HistoricoAcionamentoRequest(
+                LocalDateTime.of(2026, 1, 1, 12, 0), 7L, "ok");
+        when(chamadoRepository.findById(5L)).thenReturn(Optional.of(chamado));
+        when(funcionarioRepository.findById(7L)).thenReturn(Optional.of(autor));
+        when(historicoAcionamentoRepository.save(any())).thenAnswer(invocation -> {
+            HistoricoAcionamento historico = invocation.getArgument(0);
+            historico.setId(9L);
+            return historico;
+        });
+
+        var resposta = historicoAcionamentoService.registrar(5L, request);
+
+        assertThat(resposta.id()).isEqualTo(9L);
+        assertThat(resposta.autorNome()).isEqualTo("Ana");
+        assertThat(chamado.getHistorico()).hasSize(1);
+        verify(historicoAcionamentoRepository).save(any());
+    }
+
+    @Test
+    void registrar_comChamadoInexistente_naoBuscaAutor() {
+        when(chamadoRepository.findById(5L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> historicoAcionamentoService.registrar(5L,
+                new HistoricoAcionamentoRequest(LocalDateTime.now(), 7L, "ok")))
+                .isInstanceOf(EntidadeNaoEncontradaException.class);
+        verify(funcionarioRepository, never()).findById(any());
+    }
+
+    @Test
+    void registrar_comAutorInexistente_naoSalvaHistorico() {
+        when(chamadoRepository.findById(5L)).thenReturn(Optional.of(chamado(5L)));
+        when(funcionarioRepository.findById(7L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> historicoAcionamentoService.registrar(5L,
+                new HistoricoAcionamentoRequest(LocalDateTime.now(), 7L, "ok")))
+                .isInstanceOf(EntidadeNaoEncontradaException.class);
+        verify(historicoAcionamentoRepository, never()).save(any());
+    }
+
     private HistoricoAcionamento historico(Long id, LocalDateTime dataHora, Funcionario autor, String comentario) {
         HistoricoAcionamento historico = new HistoricoAcionamento();
         historico.setId(id);
@@ -77,5 +124,12 @@ class HistoricoAcionamentoServiceTest {
         funcionario.setId(id);
         funcionario.setNome(nome);
         return funcionario;
+    }
+
+    private Chamado chamado(Long id) {
+        Chamado chamado = new Chamado();
+        chamado.setId(id);
+        chamado.setHistorico(new HashSet<>());
+        return chamado;
     }
 }

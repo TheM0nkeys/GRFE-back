@@ -5,6 +5,7 @@ import br.com.itaipu.grfe.dto.response.EspecialidadeResponse;
 import br.com.itaipu.grfe.entity.Departamento;
 import br.com.itaipu.grfe.entity.Divisao;
 import br.com.itaipu.grfe.entity.Especialidades;
+import br.com.itaipu.grfe.exception.EntidadeNaoEncontradaException;
 import br.com.itaipu.grfe.repository.DepartamentoRepository;
 import br.com.itaipu.grfe.repository.DivisaoRepository;
 import br.com.itaipu.grfe.repository.EspecialidadesRepository;
@@ -15,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -95,6 +97,74 @@ class EspecialidadesServiceTest {
         verify(especialidadesRepository, never()).save(any());
     }
 
+    @Test
+    void listarTodas_mapeiaEspecialidades() {
+        Divisao divisao = divisao(1L, "TI");
+        Departamento departamento = departamento(10L, "Infraestrutura", divisao);
+        when(especialidadesRepository.findAll()).thenReturn(List.of(
+                especialidade(100L, "Redes", "desc", divisao, departamento)));
+
+        var resposta = service.listarTodas();
+
+        assertEquals(1, resposta.size());
+        assertEquals("Redes", resposta.get(0).nome());
+    }
+
+    @Test
+    void buscarPorId_quandoEspecialidadeExiste_retornaResposta() {
+        Divisao divisao = divisao(1L, "TI");
+        Departamento departamento = departamento(10L, "Infraestrutura", divisao);
+        when(especialidadesRepository.findById(100L)).thenReturn(Optional.of(
+                especialidade(100L, "Redes", "desc", divisao, departamento)));
+
+        assertEquals("Redes", service.buscarPorId(100L).nome());
+    }
+
+    @Test
+    void criar_quandoDivisaoNaoExiste_lancaEntidadeNaoEncontrada() {
+        when(divisaoRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(EntidadeNaoEncontradaException.class,
+                () -> service.criar(new EspecialidadesRequest("Redes", "desc", 1L, 10L)));
+        verify(departamentoRepository, never()).findById(any());
+    }
+
+    @Test
+    void criar_quandoDepartamentoNaoExiste_lancaEntidadeNaoEncontrada() {
+        when(divisaoRepository.findById(1L)).thenReturn(Optional.of(divisao(1L, "TI")));
+        when(departamentoRepository.findById(10L)).thenReturn(Optional.empty());
+
+        assertThrows(EntidadeNaoEncontradaException.class,
+                () -> service.criar(new EspecialidadesRequest("Redes", "desc", 1L, 10L)));
+    }
+
+    @Test
+    void atualizar_quandoEspecialidadeInexistente_naoBuscaRelacionamentos() {
+        when(especialidadesRepository.findById(100L)).thenReturn(Optional.empty());
+
+        assertThrows(EntidadeNaoEncontradaException.class,
+                () -> service.atualizar(100L,
+                        new EspecialidadesRequest("Nova", "desc", 1L, 10L)));
+        verify(divisaoRepository, never()).findById(any());
+    }
+
+    @Test
+    void deletar_quandoEspecialidadeExiste_removeRegistro() {
+        when(especialidadesRepository.existsById(100L)).thenReturn(true);
+
+        service.deletar(100L);
+
+        verify(especialidadesRepository).deleteById(100L);
+    }
+
+    @Test
+    void deletar_quandoEspecialidadeInexistente_naoRemoveRegistro() {
+        when(especialidadesRepository.existsById(100L)).thenReturn(false);
+
+        assertThrows(EntidadeNaoEncontradaException.class, () -> service.deletar(100L));
+        verify(especialidadesRepository, never()).deleteById(any());
+    }
+
     private Divisao divisao(Long id, String nome) {
         Divisao divisao = new Divisao();
         divisao.setId(id);
@@ -108,5 +178,16 @@ class EspecialidadesServiceTest {
         departamento.setNome(nome);
         departamento.setDivisao(divisao);
         return departamento;
+    }
+
+    private Especialidades especialidade(Long id, String nome, String descricao,
+                                           Divisao divisao, Departamento departamento) {
+        Especialidades especialidade = new Especialidades();
+        especialidade.setId(id);
+        especialidade.setNome(nome);
+        especialidade.setDescricao(descricao);
+        especialidade.setDivisao(divisao);
+        especialidade.setDepartamento(departamento);
+        return especialidade;
     }
 }
