@@ -1,148 +1,71 @@
-# GRFE - Gestão de Chamados Itaipu
+# GRFE - Gestão de Plantões e Acionamentos
 
-Sistema de gestão de chamados, equipes e escalas desenvolvido em Spring Boot.
+API para gerenciar divisões, departamentos, especialidades, funcionários, escalas, chamados e histórico de acionamentos.
 
-## Tecnologias
+## Pré-requisitos
 
 - Java 17
-- Spring Boot 4.1.1
-- Spring Data JPA / Hibernate
-- PostgreSQL
+- Maven instalado e disponível no `PATH` (`mvn -version` para verificar)
+- PostgreSQL em execução
+
+Este repositório não inclui Maven Wrapper. Os comandos abaixo devem ser executados na pasta que contém este README e o `pom.xml`.
 
 ## Banco de dados
 
-Crie o banco `grfe` no PostgreSQL antes de rodar a aplicação:
+Crie apenas o banco vazio no PostgreSQL:
 
 ```sql
 CREATE DATABASE grfe;
 ```
 
-Depois execute o script abaixo para criar as tabelas (ou rode via `psql -U postgres -d grfe -f sql/schema.sql`):
+Ao iniciar, o Flyway cria e atualiza as tabelas usando as migrações em `src/main/resources/db/migration`. Não execute um script manual de criação do schema.
 
-```sql
--- ============================================================
--- GRFE - Script de criação do schema (PostgreSQL)
--- ============================================================
+Por padrão, a aplicação usa `jdbc:postgresql://localhost:5432/grfe`, usuário `postgres` e a senha configurada em `src/main/resources/application.properties`. Para não depender dos valores locais do arquivo, defina as variáveis de ambiente antes de iniciar. Exemplo no PowerShell:
 
-CREATE TABLE divisao (
-    id     BIGSERIAL PRIMARY KEY,
-    nome   VARCHAR(255) NOT NULL
-);
-
-CREATE TABLE departamento (
-    id          BIGSERIAL PRIMARY KEY,
-    nome        VARCHAR(255) NOT NULL,
-    divisao_id  BIGINT NOT NULL,
-    CONSTRAINT fk_departamento_divisao
-        FOREIGN KEY (divisao_id) REFERENCES divisao (id)
-);
-
-CREATE TABLE especialidades (
-    id               BIGSERIAL PRIMARY KEY,
-    nome             VARCHAR(255) NOT NULL,
-    descricao        VARCHAR(255),
-    divisao_id       BIGINT NOT NULL,
-    departamento_id  BIGINT NOT NULL,
-    CONSTRAINT fk_especialidades_divisao
-        FOREIGN KEY (divisao_id) REFERENCES divisao (id),
-    CONSTRAINT fk_especialidades_departamento
-        FOREIGN KEY (departamento_id) REFERENCES departamento (id)
-);
-
-CREATE TABLE funcionario (
-    id         BIGSERIAL PRIMARY KEY,
-    nome       VARCHAR(255) NOT NULL,
-    matricula  VARCHAR(255) NOT NULL,
-    email      VARCHAR(255),
-    CONSTRAINT uq_funcionario_matricula UNIQUE (matricula)
-);
-
-CREATE TABLE funcionario_especialidades (
-    funcionario_id    BIGINT NOT NULL,
-    especialidade_id  BIGINT NOT NULL,
-    PRIMARY KEY (funcionario_id, especialidade_id),
-    CONSTRAINT fk_fe_funcionario
-        FOREIGN KEY (funcionario_id) REFERENCES funcionario (id),
-    CONSTRAINT fk_fe_especialidade
-        FOREIGN KEY (especialidade_id) REFERENCES especialidades (id)
-);
-
-CREATE TABLE escala (
-    id                BIGSERIAL PRIMARY KEY,
-    data_hora_inicio  TIMESTAMP NOT NULL,
-    data_hora_fim     TIMESTAMP NOT NULL,
-    especialidade_id  BIGINT NOT NULL,
-    funcionario_id    BIGINT NOT NULL,
-    CONSTRAINT fk_escala_especialidade
-        FOREIGN KEY (especialidade_id) REFERENCES especialidades (id),
-    CONSTRAINT fk_escala_funcionario
-        FOREIGN KEY (funcionario_id) REFERENCES funcionario (id)
-);
-
-CREATE TABLE chamado (
-    id                      BIGSERIAL PRIMARY KEY,
-    data_hora_acionamento   TIMESTAMP NOT NULL,
-    especialidade_id        BIGINT NOT NULL,
-    plantonista_id          BIGINT NOT NULL,
-    usuario_responsavel_id  BIGINT NOT NULL,
-    motivo                  VARCHAR(255) NOT NULL,
-    numero_incidente        VARCHAR(255),
-    status                  VARCHAR(20) NOT NULL,
-    CONSTRAINT fk_chamado_especialidade
-        FOREIGN KEY (especialidade_id) REFERENCES especialidades (id),
-    CONSTRAINT fk_chamado_plantonista
-        FOREIGN KEY (plantonista_id) REFERENCES funcionario (id),
-    CONSTRAINT fk_chamado_responsavel
-        FOREIGN KEY (usuario_responsavel_id) REFERENCES funcionario (id),
-    CONSTRAINT ck_chamado_status
-        CHECK (status IN ('ABERTO', 'EM_ANDAMENTO', 'FECHADO'))
-);
-
-CREATE TABLE historico_acionamento (
-    id           BIGSERIAL PRIMARY KEY,
-    data_hora    TIMESTAMP NOT NULL,
-    autor_id     BIGINT NOT NULL,
-    comentario   VARCHAR(2000) NOT NULL,
-    chamado_id   BIGINT NOT NULL,
-    CONSTRAINT fk_historico_autor
-        FOREIGN KEY (autor_id) REFERENCES funcionario (id),
-    CONSTRAINT fk_historico_chamado
-        FOREIGN KEY (chamado_id) REFERENCES chamado (id)
-);
-
--- Índices auxiliares
-CREATE INDEX idx_chamado_status ON chamado (status);
-CREATE INDEX idx_chamado_especialidade ON chamado (especialidade_id);
-CREATE INDEX idx_escala_funcionario ON escala (funcionario_id);
-CREATE INDEX idx_historico_chamado ON historico_acionamento (chamado_id);
+```powershell
+$env:SPRING_DATASOURCE_URL = "jdbc:postgresql://localhost:5432/grfe"
+$env:SPRING_DATASOURCE_USERNAME = "postgres"
+$env:SPRING_DATASOURCE_PASSWORD = "sua_senha_local"
+$env:JWT_SECRET = "substitua-por-uma-chave-secreta-com-mais-de-32-caracteres"
 ```
 
-### Modelo de dados
+Use um segredo JWT próprio e não compartilhe credenciais. Para integrar com o ServiceNow, configure também:
 
-| Tabela | Descrição |
-|---|---|
-| `divisao` | Divisões organizacionais |
-| `departamento` | Departamentos, vinculados a uma divisão |
-| `especialidades` | Especialidades técnicas, vinculadas a divisão e departamento |
-| `funcionario` | Funcionários, com N:N para especialidades |
-| `funcionario_especialidades` | Tabela associativa funcionário ↔ especialidade |
-| `escala` | Escalas de plantão por funcionário e especialidade |
-| `chamado` | Chamados abertos, com plantonista e responsável |
-| `historico_acionamento` | Histórico de interações em um chamado |
-
-## Configuração
-
-Configure o `application.properties` com os dados do seu banco:
-
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/grfe
-spring.datasource.username=postgres
-spring.datasource.password=sua_senha
-spring.jpa.hibernate.ddl-auto=validate
+```powershell
+$env:SERVICENOW_USERNAME = "seu_usuario"
+$env:SERVICENOW_PASSWORD = "sua_senha"
 ```
 
-## Como rodar
+Essas variáveis ficam disponíveis apenas na sessão atual do PowerShell. A migração `V8__usuario_admin.sql` cria o login `admin`, mas contém somente o hash da senha; a senha em texto não está documentada no projeto.
 
-```
+## Executar
+
+Com o PostgreSQL ativo e as variáveis configuradas, inicie a API:
+
+```powershell
 mvn spring-boot:run
 ```
+
+Por padrão, a aplicação fica disponível em `http://localhost:8080`. A interface Swagger pode ser acessada em `http://localhost:8080/swagger-ui.html`; o documento OpenAPI fica em `http://localhost:8080/v3/api-docs`.
+
+## Testes
+
+Execute toda a suíte com:
+
+```powershell
+mvn test
+```
+
+Os testes usam o perfil `test` e um banco H2 em memória; não precisam do PostgreSQL local. Para executar uma classe específica:
+
+```powershell
+mvn "-Dtest=ChamadoServiceTest" test
+```
+
+## Tecnologias
+
+- Java 17 e Spring Boot 4.1.1
+- Spring Web, Spring Security e Spring Data JPA
+- PostgreSQL e Flyway
+- JWT e OpenFeign para integração com o ServiceNow
+- H2 para testes
