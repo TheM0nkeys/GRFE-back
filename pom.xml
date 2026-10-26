@@ -176,26 +176,31 @@
 				<groupId>com.lazerycode.jmeter</groupId>
 				<artifactId>jmeter-maven-plugin</artifactId>
 				<version>3.8.0</version>
+
 				<executions>
+
+					<execution>
+						<id>configuration</id>
+						<goals>
+							<goal>configure</goal>
+						</goals>
+					</execution>
+
 					<execution>
 						<id>jmeter-tests</id>
 						<goals>
 							<goal>jmeter</goal>
 						</goals>
 					</execution>
+
 					<execution>
 						<id>jmeter-check-results</id>
 						<goals>
 							<goal>results</goal>
 						</goals>
 					</execution>
+
 				</executions>
-				<configuration>
-					<testFilesDirectory>${project.basedir}/src/test/jmeter</testFilesDirectory>
-					<resultsDirectory>${project.basedir}/target/jmeter/results</resultsDirectory>
-					<reportDirectory>${project.basedir}/target/jmeter/reports</reportDirectory>
-					<generateReports>true</generateReports>
-				</configuration>
 			</plugin>
 		</plugins>
 	</build>

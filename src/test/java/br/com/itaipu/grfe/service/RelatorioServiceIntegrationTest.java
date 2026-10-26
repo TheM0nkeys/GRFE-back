@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -60,10 +61,10 @@ class RelatorioServiceIntegrationTest {
     void gerar_comLimitesInclusivos_consideraRegistrosDoPeriodoEExcluiOsExternos() {
         LocalDateTime inicio = LocalDateTime.of(2026, 10, 20, 8, 0);
         LocalDateTime fim = LocalDateTime.of(2026, 10, 20, 18, 0);
-        persistirChamado(inicio.minusNanos(1));
+        persistirChamado(inicio.minus(1, ChronoUnit.MICROS));
         persistirChamado(inicio);
         persistirChamado(fim);
-        persistirChamado(fim.plusNanos(1));
+        persistirChamado(fim.plus(1, ChronoUnit.MICROS));
         entityManager.flush();
 
         var resposta = relatorioService.gerar(inicio, fim);
@@ -90,9 +91,9 @@ class RelatorioServiceIntegrationTest {
     @Test
     void gerarMensal_incluiChamadoDoMesAtualEExcluiChamadoDoMesAnterior() {
         LocalDateTime momento = LocalDateTime.now();
-        persistirChamado(momento.minusMinutes(1));
         LocalDateTime primeiroDiaMes = YearMonth.from(momento).atDay(1).atStartOfDay();
-        persistirChamado(primeiroDiaMes.minusNanos(1));
+        persistirChamado(primeiroDiaMes);
+        persistirChamado(primeiroDiaMes.minus(1, ChronoUnit.MICROS));
         entityManager.flush();
 
         var resposta = relatorioService.gerarMensal();
