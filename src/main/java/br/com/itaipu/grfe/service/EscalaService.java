@@ -22,6 +22,11 @@ public class EscalaService {
 
     private static final Logger log = LoggerFactory.getLogger(EscalaService.class);
 
+    private static final String MSG_INTERVALO =
+            "A data/hora de fim deve ser posterior à data/hora de início.";
+    private static final String MSG_SOBREPOSICAO =
+            "Já existe uma escala para esta especialidade que se sobrepõe ao período informado.";
+
     private final EscalaRepository escalaRepository;
     private final EspecialidadesRepository especialidadesRepository;
     private final FuncionarioRepository funcionarioRepository;
@@ -47,13 +52,8 @@ public class EscalaService {
 
     @Transactional
     public EscalaResponse criar(EscalaRequest request) {
-
-        if (request.dataHoraFim().isBefore(request.dataHoraInicio())
-                || request.dataHoraFim().isEqual(request.dataHoraInicio())) {
-            throw new IllegalArgumentException(
-                    "A data/hora de fim deve ser posterior à data/hora de início."
-            );
-        }
+        validarIntervalo(request);
+        validarSemSobreposicao(request, null);                                    // NOVO
 
         Escala escala = request.toEntity();
         vincularEspecialidadeEFuncionario(escala, request);
@@ -65,15 +65,10 @@ public class EscalaService {
 
     @Transactional
     public EscalaResponse atualizar(Long id, EscalaRequest request) {
-
-        if (request.dataHoraFim().isBefore(request.dataHoraInicio())
-                || request.dataHoraFim().isEqual(request.dataHoraInicio())) {
-            throw new IllegalArgumentException(
-                    "A data/hora de fim deve ser posterior à data/hora de início."
-            );
-        }
+        validarIntervalo(request);
 
         Escala escala = buscarEntidadePorId(id);
+        validarSemSobreposicao(request, id);                                      // NOVO
         escala.setDataHoraInicio(request.dataHoraInicio());
         escala.setDataHoraFim(request.dataHoraFim());
         vincularEspecialidadeEFuncionario(escala, request);
@@ -98,6 +93,27 @@ public class EscalaService {
                     log.warn("Escala não encontrada: id={}", id);
                     return new EntidadeNaoEncontradaException("Escala não encontrada: " + id);
                 });
+    }
+
+    private void validarIntervalo(EscalaRequest request) {
+        if (request.dataHoraFim().isBefore(request.dataHoraInicio())
+                || request.dataHoraFim().isEqual(request.dataHoraInicio())) {
+            throw new IllegalArgumentException(MSG_INTERVALO);
+        }
+    }
+
+    private void validarSemSobreposicao(EscalaRequest request, Long ignorarId) {
+        boolean sobrepoe = (ignorarId == null)
+                ? escalaRepository.existeSobreposicao(
+                request.especialidadeId(), request.dataHoraInicio(), request.dataHoraFim())
+                : escalaRepository.existeSobreposicaoIgnorando(
+                request.especialidadeId(), request.dataHoraInicio(), request.dataHoraFim(), ignorarId);
+
+        if (sobrepoe) {
+            log.warn("Escala sobreposta: especialidadeId={}, inicio={}, fim={}, ignorandoId={}",
+                    request.especialidadeId(), request.dataHoraInicio(), request.dataHoraFim(), ignorarId);
+            throw new IllegalArgumentException(MSG_SOBREPOSICAO);
+        }
     }
 
     private void vincularEspecialidadeEFuncionario(Escala escala, EscalaRequest request) {

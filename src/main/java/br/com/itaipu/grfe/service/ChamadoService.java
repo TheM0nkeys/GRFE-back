@@ -8,7 +8,7 @@ import br.com.itaipu.grfe.entity.Funcionario;
 import br.com.itaipu.grfe.entity.enums.StatusChamado;
 import br.com.itaipu.grfe.exception.EntidadeNaoEncontradaException;
 import br.com.itaipu.grfe.repository.ChamadoRepository;
-import br.com.itaipu.grfe.repository.EscalaRepository;                               // NOVO
+import br.com.itaipu.grfe.repository.EscalaRepository;
 import br.com.itaipu.grfe.repository.EspecialidadesRepository;
 import br.com.itaipu.grfe.repository.FuncionarioRepository;
 import br.com.itaipu.grfe.specification.ChamadoSpecification;
@@ -26,10 +26,14 @@ public class ChamadoService {
 
     private static final Logger log = LoggerFactory.getLogger(ChamadoService.class);
 
+    private static final String MSG_FECHADO =
+            "O acionamento está FECHADO e não pode ser alterado. Solicite a reabertura a um administrador.";
+
     private final ChamadoRepository chamadoRepository;
     private final EspecialidadesRepository especialidadesRepository;
     private final FuncionarioRepository funcionarioRepository;
     private final EscalaRepository escalaRepository;
+
     public ChamadoService(ChamadoRepository chamadoRepository,
                           EspecialidadesRepository especialidadesRepository,
                           FuncionarioRepository funcionarioRepository,
@@ -67,6 +71,8 @@ public class ChamadoService {
     @Transactional
     public ChamadoResponse atualizarStatus(Long id, StatusChamado status) {
         Chamado chamado = buscarEntidadePorId(id);
+        exigirEditavel(chamado);                                                  // NOVO
+        validarTransicao(chamado, status);                                        // NOVO
         StatusChamado statusAnterior = chamado.getStatus();
         chamado.setStatus(status);
         chamado = chamadoRepository.save(chamado);
@@ -88,6 +94,8 @@ public class ChamadoService {
     @Transactional
     public ChamadoResponse atualizar(Long id, ChamadoRequest request) {
         Chamado chamado = buscarEntidadePorId(id);
+        exigirEditavel(chamado);                                                  // NOVO
+        validarTransicao(chamado, request.status());                              // NOVO
         chamado.setDataHoraAcionamento(request.dataHoraAcionamento());
         chamado.setMotivo(request.motivo());
         chamado.setNumeroIncidente(request.numeroIncidente());
@@ -95,6 +103,21 @@ public class ChamadoService {
         vincularRelacoes(chamado, request);
         chamado = chamadoRepository.save(chamado);
         log.info("Acionamento atualizado: id={}, status={}", id, request.status());
+        return ChamadoResponse.fromEntity(chamado);
+    }
+
+
+    @Transactional
+    public ChamadoResponse reabrir(Long id) {
+        Chamado chamado = buscarEntidadePorId(id);
+        if (chamado.getStatus() != StatusChamado.FECHADO) {
+            log.warn("Tentativa de reabrir acionamento que não está FECHADO: id={}, status={}",
+                    id, chamado.getStatus());
+            throw new IllegalArgumentException("Somente acionamentos FECHADOS podem ser reabertos.");
+        }
+        chamado.setStatus(StatusChamado.ABERTO);
+        chamado = chamadoRepository.save(chamado);
+        log.info("Acionamento reaberto: id={}", id);
         return ChamadoResponse.fromEntity(chamado);
     }
 
@@ -114,6 +137,23 @@ public class ChamadoService {
                     log.warn("Acionamento não encontrado: id={}", id);
                     return new EntidadeNaoEncontradaException("Acionamento não encontrado: " + id);
                 });
+    }
+
+    private void exigirEditavel(Chamado chamado) {
+        if (chamado.getStatus() == StatusChamado.FECHADO) {
+            log.warn("Tentativa de alterar acionamento FECHADO: id={}", chamado.getId());
+            throw new IllegalArgumentException(MSG_FECHADO);
+        }
+    }
+
+    private void validarTransicao(Chamado chamado, StatusChamado destino) {
+        StatusChamado atual = chamado.getStatus();
+        if (atual == null || atual.podeIrPara(destino)) {
+            return;
+        }
+        log.warn("Transição de status não permitida: id={}, de={}, para={}", chamado.getId(), atual, destino);
+        throw new IllegalArgumentException(
+                "Transição de status não permitida: de " + atual + " para " + destino + ".");
     }
 
     private void vincularRelacoes(Chamado chamado, ChamadoRequest request) {
