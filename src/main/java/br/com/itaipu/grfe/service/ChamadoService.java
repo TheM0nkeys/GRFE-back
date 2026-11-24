@@ -11,6 +11,7 @@ import br.com.itaipu.grfe.repository.ChamadoRepository;
 import br.com.itaipu.grfe.repository.EscalaRepository;
 import br.com.itaipu.grfe.repository.EspecialidadesRepository;
 import br.com.itaipu.grfe.repository.FuncionarioRepository;
+import br.com.itaipu.grfe.security.UsuarioLogado;
 import br.com.itaipu.grfe.specification.ChamadoSpecification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,15 +34,18 @@ public class ChamadoService {
     private final EspecialidadesRepository especialidadesRepository;
     private final FuncionarioRepository funcionarioRepository;
     private final EscalaRepository escalaRepository;
+    private final UsuarioLogado usuarioLogado;                                          // NOVO
 
     public ChamadoService(ChamadoRepository chamadoRepository,
                           EspecialidadesRepository especialidadesRepository,
                           FuncionarioRepository funcionarioRepository,
-                          EscalaRepository escalaRepository) {
+                          EscalaRepository escalaRepository,
+                          UsuarioLogado usuarioLogado) {                                // NOVO
         this.chamadoRepository = chamadoRepository;
         this.especialidadesRepository = especialidadesRepository;
         this.funcionarioRepository = funcionarioRepository;
         this.escalaRepository = escalaRepository;
+        this.usuarioLogado = usuarioLogado;
     }
 
     public List<ChamadoResponse> listar(StatusChamado status,
@@ -71,8 +75,8 @@ public class ChamadoService {
     @Transactional
     public ChamadoResponse atualizarStatus(Long id, StatusChamado status) {
         Chamado chamado = buscarEntidadePorId(id);
-        exigirEditavel(chamado);                                                  // NOVO
-        validarTransicao(chamado, status);                                        // NOVO
+        exigirEditavel(chamado);
+        validarTransicao(chamado, status);
         StatusChamado statusAnterior = chamado.getStatus();
         chamado.setStatus(status);
         chamado = chamadoRepository.save(chamado);
@@ -85,27 +89,28 @@ public class ChamadoService {
     public ChamadoResponse criar(ChamadoRequest request) {
         Chamado chamado = request.toEntity();
         vincularRelacoes(chamado, request);
+        chamado.setUsuarioResponsavel(buscarResponsavelLogado());                       // CHANGED
         chamado = chamadoRepository.save(chamado);
-        log.info("Acionamento criado: id={}, especialidadeId={}, plantonistaId={}, numeroIncidente={}",
-                chamado.getId(), request.especialidadeId(), request.plantonistaId(), request.numeroIncidente());
+        log.info("Acionamento criado: id={}, especialidadeId={}, plantonistaId={}, responsavelId={}, numeroIncidente={}",
+                chamado.getId(), request.especialidadeId(), request.plantonistaId(),
+                chamado.getUsuarioResponsavel().getId(), request.numeroIncidente());
         return ChamadoResponse.fromEntity(chamado);
     }
 
     @Transactional
     public ChamadoResponse atualizar(Long id, ChamadoRequest request) {
         Chamado chamado = buscarEntidadePorId(id);
-        exigirEditavel(chamado);                                                  // NOVO
-        validarTransicao(chamado, request.status());                              // NOVO
+        exigirEditavel(chamado);
+        validarTransicao(chamado, request.status());
         chamado.setDataHoraAcionamento(request.dataHoraAcionamento());
         chamado.setMotivo(request.motivo());
         chamado.setNumeroIncidente(request.numeroIncidente());
         chamado.setStatus(request.status());
-        vincularRelacoes(chamado, request);
+        vincularRelacoes(chamado, request);                                             // não troca o responsável
         chamado = chamadoRepository.save(chamado);
         log.info("Acionamento atualizado: id={}, status={}", id, request.status());
         return ChamadoResponse.fromEntity(chamado);
     }
-
 
     @Transactional
     public ChamadoResponse reabrir(Long id) {
@@ -156,6 +161,15 @@ public class ChamadoService {
                 "Transição de status não permitida: de " + atual + " para " + destino + ".");
     }
 
+    private Funcionario buscarResponsavelLogado() {
+        Long funcionarioId = usuarioLogado.funcionarioId();
+        return funcionarioRepository.findById(funcionarioId)
+                .orElseThrow(() -> {
+                    log.warn("Usuário responsável não encontrado ao vincular acionamento: usuarioResponsavelId={}", funcionarioId);
+                    return new EntidadeNaoEncontradaException("Usuário responsável não encontrado: " + funcionarioId);
+                });
+    }
+
     private void vincularRelacoes(Chamado chamado, ChamadoRequest request) {
         Especialidades especialidade = especialidadesRepository.findById(request.especialidadeId())
                 .orElseThrow(() -> {
@@ -190,14 +204,7 @@ public class ChamadoService {
                     "O plantonista informado não está em escala para esta especialidade na data/hora do acionamento.");
         }
 
-        Funcionario usuarioResponsavel = funcionarioRepository.findById(request.usuarioResponsavelId())
-                .orElseThrow(() -> {
-                    log.warn("Usuário responsável não encontrado ao vincular acionamento: usuarioResponsavelId={}", request.usuarioResponsavelId());
-                    return new EntidadeNaoEncontradaException("Usuário responsável não encontrado: " + request.usuarioResponsavelId());
-                });
-
         chamado.setEspecialidade(especialidade);
         chamado.setPlantonista(plantonista);
-        chamado.setUsuarioResponsavel(usuarioResponsavel);
     }
 }

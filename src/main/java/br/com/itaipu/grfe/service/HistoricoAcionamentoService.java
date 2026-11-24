@@ -9,6 +9,7 @@ import br.com.itaipu.grfe.exception.EntidadeNaoEncontradaException;
 import br.com.itaipu.grfe.repository.ChamadoRepository;
 import br.com.itaipu.grfe.repository.FuncionarioRepository;
 import br.com.itaipu.grfe.repository.HistoricoAcionamentoRepository;
+import br.com.itaipu.grfe.security.UsuarioLogado;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -26,13 +27,16 @@ public class HistoricoAcionamentoService {
     private final HistoricoAcionamentoRepository historicoAcionamentoRepository;
     private final ChamadoRepository chamadoRepository;
     private final FuncionarioRepository funcionarioRepository;
+    private final UsuarioLogado usuarioLogado;                                          // NOVO
 
     public HistoricoAcionamentoService(HistoricoAcionamentoRepository historicoAcionamentoRepository,
                                        ChamadoRepository chamadoRepository,
-                                       FuncionarioRepository funcionarioRepository) {
+                                       FuncionarioRepository funcionarioRepository,
+                                       UsuarioLogado usuarioLogado) {                   // NOVO
         this.historicoAcionamentoRepository = historicoAcionamentoRepository;
         this.chamadoRepository = chamadoRepository;
         this.funcionarioRepository = funcionarioRepository;
+        this.usuarioLogado = usuarioLogado;
     }
 
     public List<HistoricoAcionamentoResponse> listarPorChamado(Long chamadoId) {
@@ -48,10 +52,11 @@ public class HistoricoAcionamentoService {
     public HistoricoAcionamentoResponse registrar(Long chamadoId, HistoricoAcionamentoRequest request) {
         Chamado chamado = buscarChamado(chamadoId);
 
-        Funcionario autor = funcionarioRepository.findById(request.autorId())
+        Long autorId = usuarioLogado.funcionarioId();                                   // CHANGED
+        Funcionario autor = funcionarioRepository.findById(autorId)
                 .orElseThrow(() -> {
-                    log.warn("Autor não encontrado ao registrar histórico: autorId={}", request.autorId());
-                    return new EntidadeNaoEncontradaException("Autor não encontrado: " + request.autorId());
+                    log.warn("Autor não encontrado ao registrar histórico: autorId={}", autorId);
+                    return new EntidadeNaoEncontradaException("Autor não encontrado: " + autorId);
                 });
 
         HistoricoAcionamento historico = request.toEntity();
@@ -61,7 +66,7 @@ public class HistoricoAcionamentoService {
         HistoricoAcionamento salvo = historicoAcionamentoRepository.save(historico);
         chamado.getHistorico().add(salvo);
 
-        log.info("Histórico registrado: chamadoId={}, autorId={}", chamadoId, request.autorId());
+        log.info("Histórico registrado: chamadoId={}, autorId={}", chamadoId, autorId);
 
         return HistoricoAcionamentoResponse.fromEntity(salvo);
     }

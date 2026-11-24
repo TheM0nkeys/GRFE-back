@@ -6,15 +6,13 @@
   <component name="ChangeListManager">
     <list default="true" id="c56f1c9e-f8ad-40fd-adce-c9394977e6fb" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/config/CorsConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/config/CorsConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/config/SecurityConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/controller/ChamadoController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/controller/ChamadoController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/entity/enums/StatusChamado.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/entity/enums/StatusChamado.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/exception/GlobalExceptionHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/exception/GlobalExceptionHandler.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/repository/EscalaRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/repository/EscalaRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/dto/request/ChamadoRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/dto/request/ChamadoRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/dto/request/HistoricoAcionamentoRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/dto/request/HistoricoAcionamentoRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/repository/UsuarioRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/repository/UsuarioRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/security/UsuarioDetails.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/security/UsuarioDetails.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/service/ChamadoService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/service/ChamadoService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/service/EscalaService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/service/EscalaService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/service/HistoricoAcionamentoService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/service/HistoricoAcionamentoService.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -76,32 +74,32 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Application.GrfeApplication.executor&quot;: &quot;Run&quot;,
-    &quot;Application.main.executor&quot;: &quot;Run&quot;,
-    &quot;JUnit.GrfeApplicationTests.executor&quot;: &quot;Coverage&quot;,
-    &quot;Maven.grfe [clean].executor&quot;: &quot;Run&quot;,
-    &quot;Maven.grfe [validate].executor&quot;: &quot;Run&quot;,
-    &quot;Maven.grfe [verify].executor&quot;: &quot;Run&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;Spring Boot.GrfeApplication.executor&quot;: &quot;Run&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;feat-teste__jwt&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/felip/OneDrive/Desktop/Projetos-4-periodo/GRFE&quot;,
-    &quot;onboarding.tips.debug.path&quot;: &quot;C:/Users/felip/OneDrive/Desktop/Projetos-4-periodo/GRFE/config/src/Main.java&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Application.GrfeApplication.executor": "Run",
+    "Application.main.executor": "Run",
+    "JUnit.GrfeApplicationTests.executor": "Coverage",
+    "Maven.grfe [clean].executor": "Run",
+    "Maven.grfe [validate].executor": "Run",
+    "Maven.grfe [verify].executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "Spring Boot.GrfeApplication.executor": "Run",
+    "git-widget-placeholder": "feat-ajustes-jwt",
+    "ignore.virus.scanning.warn.message": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/Users/felip/OneDrive/Desktop/Projetos-4-periodo/GRFE",
+    "onboarding.tips.debug.path": "C:/Users/felip/OneDrive/Desktop/Projetos-4-periodo/GRFE/config/src/Main.java"
   },
-  &quot;keyToStringList&quot;: {
-    &quot;DatabaseDriversLRU&quot;: [
-      &quot;postgresql&quot;
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "postgresql"
     ]
   }
-}</component>
+}]]></component>
   <component name="RunManager" selected="Application.main">
     <configuration name="main" type="Application" factoryName="Application">
       <option name="MAIN_CLASS_NAME" value="br.com.itaipu.grfe.GrfeApplication" />
