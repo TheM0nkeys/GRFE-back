@@ -20,10 +20,10 @@
 	<properties>
 		<java.version>17</java.version>
 		<spring-cloud.version>2025.1.3</spring-cloud.version>
-		<sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
-		<sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
-		<sonar.jacoco.reportPath>${project.basedir}/target/jacoco.exec</sonar.jacoco.reportPath>
-		<sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+
+		<sonar.coverage.jacoco.xmlReportPaths>
+			${project.basedir}/target/site/jacoco/jacoco.xml
+		</sonar.coverage.jacoco.xmlReportPaths>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -136,9 +136,18 @@
 					<execution>
 						<id>pre-integration-test</id>
 						<phase>pre-integration-test</phase>
+
 						<goals>
 							<goal>start</goal>
 						</goals>
+
+						<configuration>
+							<profiles>
+								<profile>test</profile>
+							</profiles>
+
+							<useTestClasspath>true</useTestClasspath>
+						</configuration>
 					</execution>
 
 					<execution>
