@@ -1,6 +1,8 @@
 package br.com.itaipu.grfe.controller;
 
 import br.com.itaipu.grfe.client.ServiceNowClient;
+import br.com.itaipu.grfe.client.dtoservicenow.ServiceNowIncidentListaRaw;
+import br.com.itaipu.grfe.client.dtoservicenow.ServiceNowIncidentRaw;
 import br.com.itaipu.grfe.dto.request.ServiceNowIncidentRequest;
 import br.com.itaipu.grfe.dto.response.ServiceNowIncidentResponse;
 import br.com.itaipu.grfe.service.ServiceNowService;
@@ -13,8 +15,13 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -22,7 +29,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest
 @AutoConfigureMockMvc(addFilters = false)
-@ContextConfiguration(classes = {ServiceNowController.class, ServiceNowService.class})
+@ContextConfiguration(classes = {
+        ServiceNowController.class,
+        ServiceNowService.class
+})
 class ServiceNowControllerTest {
 
     @Autowired
@@ -33,8 +43,9 @@ class ServiceNowControllerTest {
 
     @Test
     void criarIncidente_comClientMockado_retorna201() throws Exception {
-        when(serviceNowClient.criarIncidente(any(ServiceNowIncidentRequest.class)))
-                .thenReturn(response("SYS001", "INC001"));
+        when(serviceNowClient.criarIncidente(
+                any(ServiceNowIncidentRequest.class)
+        )).thenReturn(response("SYS001", "INC001"));
 
         mockMvc.perform(post("/integracao/servicenow/incidentes")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -47,7 +58,7 @@ class ServiceNowControllerTest {
     @Test
     void atualizarIncidente_comClientMockado_retorna200() throws Exception {
         when(serviceNowClient.atualizarIncidente(
-                org.mockito.ArgumentMatchers.eq("SYS001"),
+                eq("SYS001"),
                 any(ServiceNowIncidentRequest.class)
         )).thenReturn(response("SYS001", "INC001"));
 
@@ -59,9 +70,52 @@ class ServiceNowControllerTest {
     }
 
     @Test
-    void criarIncidente_quandoClientFalha_retorna503SemChamarServiceNowReal() throws Exception {
-        when(serviceNowClient.criarIncidente(any(ServiceNowIncidentRequest.class)))
-                .thenThrow(new RuntimeException("ServiceNow indisponível"));
+    void consultarIncidente_quandoEncontrado_retorna200() throws Exception {
+
+        ServiceNowIncidentRaw.Result incidente =
+                new ServiceNowIncidentRaw.Result(
+                        "SYS001",
+                        "INC0010001",
+                        "Falha no sistema",
+                        "Sistema indisponível",
+                        "2",
+                        "2",
+                        "1"
+                );
+
+        when(serviceNowClient.buscarPorFiltro(
+                eq("number=INC0010001"),
+                anyString(),
+                eq(1)
+        )).thenReturn(
+                new ServiceNowIncidentListaRaw(
+                        List.of(incidente)
+                )
+        );
+
+        mockMvc.perform(
+                        get("/integracao/servicenow/incidentes/INC0010001")
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.disponivel").value(true))
+                .andExpect(jsonPath("$.sysId").value("SYS001"))
+                .andExpect(jsonPath("$.numero").value("INC0010001"))
+                .andExpect(jsonPath("$.descricaoResumida")
+                        .value("Falha no sistema"))
+                .andExpect(jsonPath("$.estado").value("Novo"))
+                .andExpect(jsonPath("$.impacto").value("2"))
+                .andExpect(jsonPath("$.urgencia").value("2"));
+    }
+
+    @Test
+    void criarIncidente_quandoClientFalha_retorna503SemChamarServiceNowReal()
+            throws Exception {
+
+        when(serviceNowClient.criarIncidente(
+                any(ServiceNowIncidentRequest.class)
+        )).thenThrow(
+                new RuntimeException("ServiceNow indisponível")
+        );
 
         mockMvc.perform(post("/integracao/servicenow/incidentes")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -80,7 +134,10 @@ class ServiceNowControllerTest {
                 """;
     }
 
-    private ServiceNowIncidentResponse response(String sysId, String number) {
+    private ServiceNowIncidentResponse response(
+            String sysId,
+            String number
+    ) {
         return new ServiceNowIncidentResponse(
                 new ServiceNowIncidentResponse.Result(
                         sysId,

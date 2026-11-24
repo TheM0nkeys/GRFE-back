@@ -6,6 +6,7 @@ import br.com.itaipu.grfe.service.ServiceNowService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import br.com.itaipu.grfe.dto.response.ServiceNowConsultaResponse;
 
 @RestController
 @RequestMapping("/integracao/servicenow")
@@ -56,5 +57,14 @@ public class ServiceNowController {
                     .status(HttpStatus.SERVICE_UNAVAILABLE)
                     .build();
         }
+    }
+
+    @GetMapping("/incidentes/{numero}")
+    public ResponseEntity<ServiceNowConsultaResponse> consultarIncidente(
+            @PathVariable String numero) {
+
+        return ResponseEntity.ok(
+                serviceNowService.consultarPorNumero(numero)
+        );
     }
 }
