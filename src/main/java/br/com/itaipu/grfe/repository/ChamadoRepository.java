@@ -3,19 +3,26 @@ package br.com.itaipu.grfe.repository;
 import br.com.itaipu.grfe.entity.Chamado;
 import br.com.itaipu.grfe.entity.enums.StatusChamado;
 import br.com.itaipu.grfe.repository.projecao.ContagemPorNome;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ChamadoRepository extends JpaRepository<Chamado, Long>, JpaSpecificationExecutor<Chamado> {
 
     List<Chamado> findByStatus(StatusChamado status);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select c from Chamado c where c.id = :id")
+    Optional<Chamado> buscarParaAtualizar(@Param("id") Long id);
 
     @Query("""
             select count(c) from Chamado c

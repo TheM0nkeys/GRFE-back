@@ -15,6 +15,10 @@ import br.com.itaipu.grfe.security.UsuarioLogado;
 import br.com.itaipu.grfe.specification.ChamadoSpecification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +31,8 @@ public class ChamadoService {
 
     private static final Logger log = LoggerFactory.getLogger(ChamadoService.class);
 
+    private static final int TAMANHO_MAXIMO_PAGINA = 100;                              // NOVO
+
     private static final String MSG_FECHADO =
             "O acionamento está FECHADO e não pode ser alterado. Solicite a reabertura a um administrador.";
 
@@ -34,13 +40,13 @@ public class ChamadoService {
     private final EspecialidadesRepository especialidadesRepository;
     private final FuncionarioRepository funcionarioRepository;
     private final EscalaRepository escalaRepository;
-    private final UsuarioLogado usuarioLogado;                                          // NOVO
+    private final UsuarioLogado usuarioLogado;
 
     public ChamadoService(ChamadoRepository chamadoRepository,
                           EspecialidadesRepository especialidadesRepository,
                           FuncionarioRepository funcionarioRepository,
                           EscalaRepository escalaRepository,
-                          UsuarioLogado usuarioLogado) {                                // NOVO
+                          UsuarioLogado usuarioLogado) {
         this.chamadoRepository = chamadoRepository;
         this.especialidadesRepository = especialidadesRepository;
         this.funcionarioRepository = funcionarioRepository;
@@ -68,13 +74,42 @@ public class ChamadoService {
                 .toList();
     }
 
+    public Page<ChamadoResponse> listarPaginado(StatusChamado status,
+                                                Long especialidadeId,
+                                                Long plantonistaId,
+                                                Long divisaoId,
+                                                Long departamentoId,
+                                                LocalDateTime dataInicio,
+                                                LocalDateTime dataFim,
+                                                int page,
+                                                int size) {
+        if (page < 0 || size < 1 || size > TAMANHO_MAXIMO_PAGINA) {
+            throw new IllegalArgumentException(
+                    "Paginação inválida: page deve ser maior ou igual a 0 e size deve estar entre 1 e "
+                            + TAMANHO_MAXIMO_PAGINA + ".");
+        }
+
+        log.info("Listando acionamentos paginados: page={}, size={}, status={}, especialidadeId={}, " +
+                        "plantonistaId={}, divisaoId={}, departamentoId={}, dataInicio={}, dataFim={}",
+                page, size, status, especialidadeId, plantonistaId, divisaoId, departamentoId, dataInicio, dataFim);
+
+        var filtro = ChamadoSpecification.comFiltros(
+                status, especialidadeId, plantonistaId, divisaoId, departamentoId, dataInicio, dataFim);
+
+        Pageable pageable = PageRequest.of(page, size,
+                Sort.by(Sort.Direction.DESC, "dataHoraAcionamento")
+                        .and(Sort.by(Sort.Direction.DESC, "id")));
+
+        return chamadoRepository.findAll(filtro, pageable).map(ChamadoResponse::fromEntity);
+    }
+
     public ChamadoResponse buscarPorId(Long id) {
         return ChamadoResponse.fromEntity(buscarEntidadePorId(id));
     }
 
     @Transactional
     public ChamadoResponse atualizarStatus(Long id, StatusChamado status) {
-        Chamado chamado = buscarEntidadePorId(id);
+        Chamado chamado = buscarEntidadeParaAtualizar(id);                              // CHANGED (trava)
         exigirEditavel(chamado);
         validarTransicao(chamado, status);
         StatusChamado statusAnterior = chamado.getStatus();
@@ -89,7 +124,7 @@ public class ChamadoService {
     public ChamadoResponse criar(ChamadoRequest request) {
         Chamado chamado = request.toEntity();
         vincularRelacoes(chamado, request);
-        chamado.setUsuarioResponsavel(buscarResponsavelLogado());                       // CHANGED
+        chamado.setUsuarioResponsavel(buscarResponsavelLogado());
         chamado = chamadoRepository.save(chamado);
         log.info("Acionamento criado: id={}, especialidadeId={}, plantonistaId={}, responsavelId={}, numeroIncidente={}",
                 chamado.getId(), request.especialidadeId(), request.plantonistaId(),
@@ -99,7 +134,7 @@ public class ChamadoService {
 
     @Transactional
     public ChamadoResponse atualizar(Long id, ChamadoRequest request) {
-        Chamado chamado = buscarEntidadePorId(id);
+        Chamado chamado = buscarEntidadeParaAtualizar(id);                              // CHANGED (trava)
         exigirEditavel(chamado);
         validarTransicao(chamado, request.status());
         chamado.setDataHoraAcionamento(request.dataHoraAcionamento());
@@ -114,7 +149,7 @@ public class ChamadoService {
 
     @Transactional
     public ChamadoResponse reabrir(Long id) {
-        Chamado chamado = buscarEntidadePorId(id);
+        Chamado chamado = buscarEntidadeParaAtualizar(id);                              // CHANGED (trava)
         if (chamado.getStatus() != StatusChamado.FECHADO) {
             log.warn("Tentativa de reabrir acionamento que não está FECHADO: id={}, status={}",
                     id, chamado.getStatus());
@@ -138,6 +173,14 @@ public class ChamadoService {
 
     private Chamado buscarEntidadePorId(Long id) {
         return chamadoRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.warn("Acionamento não encontrado: id={}", id);
+                    return new EntidadeNaoEncontradaException("Acionamento não encontrado: " + id);
+                });
+    }
+
+    private Chamado buscarEntidadeParaAtualizar(Long id) {
+        return chamadoRepository.buscarParaAtualizar(id)
                 .orElseThrow(() -> {
                     log.warn("Acionamento não encontrado: id={}", id);
                     return new EntidadeNaoEncontradaException("Acionamento não encontrado: " + id);

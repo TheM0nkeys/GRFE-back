@@ -6,7 +6,11 @@
   <component name="ChangeListManager">
     <list default="true" id="c56f1c9e-f8ad-40fd-adce-c9394977e6fb" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/config/CorsConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/config/CorsConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/controller/ChamadoController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/controller/ChamadoController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/exception/GlobalExceptionHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/exception/GlobalExceptionHandler.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/repository/ChamadoRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/repository/ChamadoRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/service/ChamadoService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/service/ChamadoService.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
