@@ -9,6 +9,7 @@ import br.com.itaipu.grfe.dto.response.ServiceNowConsultaResponse;
 import br.com.itaipu.grfe.exception.EntidadeNaoEncontradaException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import br.com.itaipu.grfe.exception.ServiceNowIndisponivelException;
 
 import java.util.regex.Pattern;
 
@@ -33,14 +34,44 @@ public class ServiceNowService {
     public ServiceNowIncidentResponse criarIncidente(
             ServiceNowIncidentRequest request) {
 
-        return serviceNowClient.criarIncidente(request);
+        try {
+            return serviceNowClient.criarIncidente(request);
+
+        } catch (Exception ex) {
+            log.warn(
+                    "Falha ao criar incidente no ServiceNow: {}",
+                    ex.getMessage()
+            );
+
+            throw new ServiceNowIndisponivelException(
+                    "Não foi possível criar o incidente no ServiceNow.",
+                    ex
+            );
+        }
     }
 
     public ServiceNowIncidentResponse atualizarIncidente(
             String sysId,
             ServiceNowIncidentRequest request) {
 
-        return serviceNowClient.atualizarIncidente(sysId, request);
+        try {
+            return serviceNowClient.atualizarIncidente(
+                    sysId,
+                    request
+            );
+
+        } catch (Exception ex) {
+            log.warn(
+                    "Falha ao atualizar incidente no ServiceNow: sysId={}, erro={}",
+                    sysId,
+                    ex.getMessage()
+            );
+
+            throw new ServiceNowIndisponivelException(
+                    "Não foi possível atualizar o incidente no ServiceNow.",
+                    ex
+            );
+        }
     }
 
     public ServiceNowConsultaResponse consultarPorNumero(String numero) {

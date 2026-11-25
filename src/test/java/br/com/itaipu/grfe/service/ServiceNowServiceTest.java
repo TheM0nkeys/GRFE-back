@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import br.com.itaipu.grfe.exception.ServiceNowIndisponivelException;
 
 import java.util.List;
 
@@ -44,6 +45,49 @@ class ServiceNowServiceTest {
 
         assertSame(response, resultado);
         verify(serviceNowClient).criarIncidente(request);
+    }
+
+    @Test
+    void criarIncidente_quandoServiceNowFalha_lancaServiceNowIndisponivelException() {
+        ServiceNowIncidentRequest request = request();
+
+        when(serviceNowClient.criarIncidente(request))
+                .thenThrow(new RuntimeException("Falha externa"));
+
+        ServiceNowIndisponivelException exception =
+                assertThrows(
+                        ServiceNowIndisponivelException.class,
+                        () -> service.criarIncidente(request)
+                );
+
+        assertEquals(
+                "Não foi possível criar o incidente no ServiceNow.",
+                exception.getMessage()
+        );
+
+        verify(serviceNowClient).criarIncidente(request);
+    }
+
+    @Test
+    void atualizarIncidente_quandoServiceNowFalha_lancaServiceNowIndisponivelException() {
+        ServiceNowIncidentRequest request = request();
+
+        when(serviceNowClient.atualizarIncidente("SYS001", request))
+                .thenThrow(new RuntimeException("Falha externa"));
+
+        ServiceNowIndisponivelException exception =
+                assertThrows(
+                        ServiceNowIndisponivelException.class,
+                        () -> service.atualizarIncidente("SYS001", request)
+                );
+
+        assertEquals(
+                "Não foi possível atualizar o incidente no ServiceNow.",
+                exception.getMessage()
+        );
+
+        verify(serviceNowClient)
+                .atualizarIncidente("SYS001", request);
     }
 
     @Test
