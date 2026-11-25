@@ -11,7 +11,7 @@ public record ChamadoRequest(
         @NotNull(message = "A data/hora do acionamento é obrigatória") LocalDateTime dataHoraAcionamento,
         @NotNull(message = "A especialidade acionada é obrigatória") Long especialidadeId,
         @NotNull(message = "O plantonista acionado é obrigatório") Long plantonistaId,
-        @NotNull(message = "O usuário responsável pelo acionamento é obrigatório") Long usuarioResponsavelId,
+        Long usuarioResponsavelId,
         @NotBlank(message = "O motivo do acionamento é obrigatório") String motivo,
         String numeroIncidente,
         @NotNull(message = "O status do acionamento é obrigatório") StatusChamado status

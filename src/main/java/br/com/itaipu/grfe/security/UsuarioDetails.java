@@ -20,6 +20,10 @@ public class UsuarioDetails implements UserDetails {
         return usuario.getId();
     }
 
+    public Long getFuncionarioId() {
+        return usuario.getFuncionario() != null ? usuario.getFuncionario().getId() : null;
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + usuario.getRole().name()));

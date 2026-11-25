@@ -14,6 +14,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.sql.SQLException;                                                      // NOVO
 import java.util.List;
 
 @RestControllerAdvice
@@ -25,9 +27,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErroResponse> handleDataIntegrityViolation(
             DataIntegrityViolationException ex) {
 
+        String mensagem = descreverViolacao(ex);                                   // CHANGED
+        log.warn("Violação de integridade de dados: {}", mensagem);
+
         ErroResponse erro = ErroResponse.of(
                 HttpStatus.CONFLICT.value(),
-                "A operação não pode ser realizada porque o registro possui dados relacionados."
+                mensagem
         );
 
         return ResponseEntity.status(HttpStatus.CONFLICT).body(erro);
@@ -120,5 +125,30 @@ public class GlobalExceptionHandler {
 
     private String formatarErroDeCampo(FieldError erro) {
         return erro.getField() + ": " + erro.getDefaultMessage();
+    }
+
+    private String descreverViolacao(DataIntegrityViolationException ex) {
+        Throwable causa = ex.getMostSpecificCause();
+        String sqlState = (causa instanceof SQLException sql) ? sql.getSQLState() : null;
+        String texto = causa.getMessage() == null ? "" : causa.getMessage().toLowerCase();
+
+        if ("23505".equals(sqlState)) {
+            if (texto.contains("numero_incidente")) {
+                return "Já existe um acionamento com este número de incidente.";
+            }
+            if (texto.contains("matricula")) {
+                return "Já existe um funcionário com esta matrícula.";
+            }
+            if (texto.contains("login")) {
+                return "Já existe um usuário com este login.";
+            }
+            return "Já existe um registro com este valor. Verifique os campos que não podem se repetir.";
+        }
+
+        if ("23503".equals(sqlState) || "23506".equals(sqlState)) {
+            return "A operação não pode ser realizada porque o registro possui dados relacionados.";
+        }
+
+        return "A operação viola uma regra de integridade dos dados.";
     }
 }

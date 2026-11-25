@@ -48,6 +48,11 @@ public class ChamadoController {
         );
     }
 
+    @PostMapping("/{id}/reabrir")
+    public ResponseEntity<ChamadoResponse> reabrir(@PathVariable Long id) {
+        return ResponseEntity.ok(chamadoService.reabrir(id));
+    }
+
     @GetMapping
     public ResponseEntity<List<ChamadoResponse>> listar(
             @RequestParam(required = false) StatusChamado status,

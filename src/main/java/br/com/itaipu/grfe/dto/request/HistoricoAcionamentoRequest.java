@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 
 public record HistoricoAcionamentoRequest(
         @NotNull(message = "A data/hora da atualização é obrigatória") LocalDateTime dataHora,
-        @NotNull(message = "O autor da atualização é obrigatório") Long autorId,
+        Long autorId,
         @NotBlank(message = "O comentário é obrigatório") String comentario
 ) {
     public HistoricoAcionamento toEntity() {
