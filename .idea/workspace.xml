@@ -6,13 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="c56f1c9e-f8ad-40fd-adce-c9394977e6fb" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/dto/request/ChamadoRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/dto/request/ChamadoRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/dto/request/HistoricoAcionamentoRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/dto/request/HistoricoAcionamentoRequest.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/repository/UsuarioRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/repository/UsuarioRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/security/UsuarioDetails.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/security/UsuarioDetails.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/service/ChamadoService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/service/ChamadoService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/service/HistoricoAcionamentoService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/br/com/itaipu/grfe/service/HistoricoAcionamentoService.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -43,7 +37,7 @@
     </persistenceIdMap>
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="138" />
+    <option name="cachedIndexableFilesCount" value="143" />
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -92,7 +86,8 @@
     "ignore.virus.scanning.warn.message": "true",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "C:/Users/felip/OneDrive/Desktop/Projetos-4-periodo/GRFE",
-    "onboarding.tips.debug.path": "C:/Users/felip/OneDrive/Desktop/Projetos-4-periodo/GRFE/config/src/Main.java"
+    "onboarding.tips.debug.path": "C:/Users/felip/OneDrive/Desktop/Projetos-4-periodo/GRFE/config/src/Main.java",
+    "settings.editor.selected.configurable": "project.propVCSSupport.ChangelistConflict"
   },
   "keyToStringList": {
     "DatabaseDriversLRU": [
