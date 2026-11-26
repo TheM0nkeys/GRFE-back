@@ -116,6 +116,20 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(erro);
     }
 
+    @ExceptionHandler(ServiceNowIndisponivelException.class)
+    public ResponseEntity<ErroResponse> handleServiceNowIndisponivel(
+            ServiceNowIndisponivelException ex) {
+
+        log.warn("ServiceNow indisponível: {}", ex.getMessage());
+
+        ErroResponse erro = ErroResponse.of(
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
+                ex.getMessage()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(erro);
     // ===== NOVO: início =====
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ErroResponse> handleParametroAusente(MissingServletRequestParameterException ex) {

@@ -14,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import br.com.itaipu.grfe.exception.GlobalExceptionHandler;
 
 import java.util.List;
 
@@ -31,7 +32,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc(addFilters = false)
 @ContextConfiguration(classes = {
         ServiceNowController.class,
-        ServiceNowService.class
+        ServiceNowService.class,
+        GlobalExceptionHandler.class
+
 })
 class ServiceNowControllerTest {
 
@@ -108,9 +111,7 @@ class ServiceNowControllerTest {
     }
 
     @Test
-    void criarIncidente_quandoClientFalha_retorna503SemChamarServiceNowReal()
-            throws Exception {
-
+    void criarIncidente_quandoClientFalha_retorna503ComErroPadronizado() throws Exception {
         when(serviceNowClient.criarIncidente(
                 any(ServiceNowIncidentRequest.class)
         )).thenThrow(
@@ -120,7 +121,28 @@ class ServiceNowControllerTest {
         mockMvc.perform(post("/integracao/servicenow/incidentes")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonRequest()))
-                .andExpect(status().isServiceUnavailable());
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.status").value(503))
+                .andExpect(jsonPath("$.mensagem")
+                        .value("Não foi possível criar o incidente no ServiceNow."));
+    }
+
+    @Test
+    void atualizarIncidente_quandoClientFalha_retorna503ComErroPadronizado() throws Exception {
+        when(serviceNowClient.atualizarIncidente(
+                eq("SYS001"),
+                any(ServiceNowIncidentRequest.class)
+        )).thenThrow(
+                new RuntimeException("ServiceNow indisponível")
+        );
+
+        mockMvc.perform(patch("/integracao/servicenow/incidentes/SYS001")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest()))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.status").value(503))
+                .andExpect(jsonPath("$.mensagem")
+                        .value("Não foi possível atualizar o incidente no ServiceNow."));
     }
 
     private String jsonRequest() {
