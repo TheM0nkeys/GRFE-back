@@ -1,21 +1,27 @@
 package br.com.itaipu.grfe.exception;
 
 import br.com.itaipu.grfe.dto.response.ErroResponse;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.SQLException;                                                      // NOVO
+
+import java.sql.SQLException;
 import java.util.List;
 
 @RestControllerAdvice
@@ -27,7 +33,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErroResponse> handleDataIntegrityViolation(
             DataIntegrityViolationException ex) {
 
-        String mensagem = descreverViolacao(ex);                                   // CHANGED
+        String mensagem = descreverViolacao(ex);
         log.warn("Violação de integridade de dados: {}", mensagem);
 
         ErroResponse erro = ErroResponse.of(
@@ -124,6 +130,54 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(erro);
+    // ===== NOVO: início =====
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErroResponse> handleParametroAusente(MissingServletRequestParameterException ex) {
+        log.warn("Parâmetro obrigatório ausente: {}", ex.getParameterName());
+
+        ErroResponse erro = ErroResponse.of(
+                HttpStatus.BAD_REQUEST.value(),
+                "O parâmetro '" + ex.getParameterName() + "' é obrigatório."
+        );
+        return ResponseEntity.badRequest().body(erro);
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErroResponse> handleMetodoNaoSuportado(HttpRequestMethodNotSupportedException ex) {
+        log.warn("Método HTTP não suportado: {}", ex.getMethod());
+
+        HttpHeaders cabecalhos = new HttpHeaders();
+        if (ex.getSupportedHttpMethods() != null) {
+            cabecalhos.setAllow(ex.getSupportedHttpMethods());
+        }
+
+        ErroResponse erro = ErroResponse.of(
+                HttpStatus.METHOD_NOT_ALLOWED.value(),
+                "Método HTTP não suportado para esta rota: " + ex.getMethod()
+        );
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).headers(cabecalhos).body(erro);
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ErroResponse> handleTipoDeMidiaNaoSuportado(HttpMediaTypeNotSupportedException ex) {
+        log.warn("Tipo de conteúdo não suportado: {}", ex.getContentType());
+
+        ErroResponse erro = ErroResponse.of(
+                HttpStatus.UNSUPPORTED_MEDIA_TYPE.value(),
+                "Tipo de conteúdo não suportado. Envie o corpo como application/json."
+        );
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(erro);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErroResponse> handleRotaInexistente(NoResourceFoundException ex) {
+        log.warn("Rota inexistente: {}", ex.getResourcePath());
+
+        ErroResponse erro = ErroResponse.of(
+                HttpStatus.NOT_FOUND.value(),
+                "Recurso não encontrado."
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(erro);
     }
 
     @ExceptionHandler(Exception.class)

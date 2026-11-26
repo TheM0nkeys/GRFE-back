@@ -9,6 +9,7 @@ import br.com.itaipu.grfe.service.ChamadoService;
 import br.com.itaipu.grfe.service.HistoricoAcionamentoService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/chamados")
 public class ChamadoController {
+
+    private static final int TAMANHO_PADRAO_PAGINA = 20;
 
     private final ChamadoService chamadoService;
     private final HistoricoAcionamentoService historicoAcionamentoService;
@@ -48,6 +51,7 @@ public class ChamadoController {
         );
     }
 
+    // Só ADMIN (regra no SecurityConfig)
     @PostMapping("/{id}/reabrir")
     public ResponseEntity<ChamadoResponse> reabrir(@PathVariable Long id) {
         return ResponseEntity.ok(chamadoService.reabrir(id));
@@ -61,10 +65,26 @@ public class ChamadoController {
             @RequestParam(required = false) Long divisaoId,
             @RequestParam(required = false) Long departamentoId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataInicio,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataFim
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataFim,
+            @RequestParam(required = false) Integer page,                                    // NOVO
+            @RequestParam(required = false) Integer size                                     // NOVO
     ) {
-        return ResponseEntity.ok(chamadoService.listar(
-                status, especialidadeId, plantonistaId, divisaoId, departamentoId, dataInicio, dataFim));
+        if (page == null && size == null) {
+            return ResponseEntity.ok(chamadoService.listar(
+                    status, especialidadeId, plantonistaId, divisaoId, departamentoId, dataInicio, dataFim));
+        }
+
+        Page<ChamadoResponse> pagina = chamadoService.listarPaginado(
+                status, especialidadeId, plantonistaId, divisaoId, departamentoId, dataInicio, dataFim,
+                page == null ? 0 : page,
+                size == null ? TAMANHO_PADRAO_PAGINA : size);
+
+        return ResponseEntity.ok()
+                .header("X-Total-Count", String.valueOf(pagina.getTotalElements()))
+                .header("X-Total-Pages", String.valueOf(pagina.getTotalPages()))
+                .header("X-Page", String.valueOf(pagina.getNumber()))
+                .header("X-Page-Size", String.valueOf(pagina.getSize()))
+                .body(pagina.getContent());
     }
 
     @PostMapping
