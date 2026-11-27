@@ -34,6 +34,7 @@ class EscalaRepositoryIntegrationTest {
     private Especialidades outraEspecialidade;
     private Funcionario funcionario;
     private Funcionario outroFuncionario;
+    private Long escalaId;
 
     @BeforeEach
     void prepararDadosIsolados() {
@@ -58,6 +59,7 @@ class EscalaRepositoryIntegrationTest {
         escala.setFuncionario(funcionario);
         entityManager.persist(escala);
         entityManager.flush();
+        escalaId = escala.getId();
         entityManager.clear();
     }
 
@@ -99,6 +101,50 @@ class EscalaRepositoryIntegrationTest {
     void plantonistaEmEscala_dentroDoIntervaloComAssociacoesCorretas_retornaTrue() {
         assertThat(escalaRepository.plantonistaEmEscala(
                 especialidade.getId(), funcionario.getId(), INICIO.plusHours(1))).isTrue();
+    }
+
+    @Test
+    void funcionarioPossuiEscalaConflitante_comSobreposicaoEmOutraEspecialidade_retornaTrue() {
+        Escala escalaOutraEspecialidade = new Escala();
+        escalaOutraEspecialidade.setDataHoraInicio(INICIO.plusHours(1));
+        escalaOutraEspecialidade.setDataHoraFim(FIM.plusHours(1));
+        escalaOutraEspecialidade.setEspecialidade(outraEspecialidade);
+        escalaOutraEspecialidade.setFuncionario(funcionario);
+        entityManager.persist(escalaOutraEspecialidade);
+        entityManager.flush();
+
+        assertThat(escalaRepository.funcionarioPossuiEscalaConflitante(
+                funcionario.getId(),
+                INICIO.plusHours(9),
+                FIM.plusHours(1),
+                null)).isTrue();
+    }
+
+    @Test
+    void funcionarioPossuiEscalaConflitante_comPeriodoAdjacente_retornaFalse() {
+        assertThat(escalaRepository.funcionarioPossuiEscalaConflitante(
+                funcionario.getId(),
+                FIM,
+                FIM.plusHours(2),
+                null)).isFalse();
+    }
+
+    @Test
+    void funcionarioPossuiEscalaConflitante_ignoraEscalaInformada() {
+        assertThat(escalaRepository.funcionarioPossuiEscalaConflitante(
+                funcionario.getId(),
+                INICIO,
+                FIM,
+                escalaId)).isFalse();
+    }
+
+    @Test
+    void funcionarioPossuiEscalaConflitante_paraOutroFuncionario_retornaFalse() {
+        assertThat(escalaRepository.funcionarioPossuiEscalaConflitante(
+                outroFuncionario.getId(),
+                INICIO.plusHours(1),
+                FIM.minusHours(1),
+                null)).isFalse();
     }
 
     private Especialidades novaEspecialidade(String nome, Divisao divisao, Departamento departamento) {

@@ -125,6 +125,21 @@ public class EscalaService {
             );
         }
 
+        if (escalaRepository.funcionarioPossuiEscalaConflitante(
+                funcionario.getId(),
+                escala.getDataHoraInicio(),
+                escala.getDataHoraFim(),
+                escala.getId())) {
+            log.warn(
+                    "Funcionário já possui escala no período informado: funcionarioId={}, escalaId={}",
+                    funcionario.getId(),
+                    escala.getId()
+            );
+            throw new IllegalArgumentException(
+                    "O funcionário já possui uma escala nesse período."
+            );
+        }
+
         escala.setEspecialidade(especialidade);
         escala.setFuncionario(funcionario);
     }

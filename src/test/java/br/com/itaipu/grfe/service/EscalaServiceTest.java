@@ -95,6 +95,19 @@ class EscalaServiceTest {
     }
 
     @Test
+    void criar_quandoFuncionarioJaPossuiEscalaConflitante_rejeitaOperacao() {
+        prepararVinculos();
+        when(escalaRepository.funcionarioPossuiEscalaConflitante(
+                20L, INICIO, FIM, null)).thenReturn(true);
+
+        assertThatThrownBy(() -> escalaService.criar(request(INICIO, FIM)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("O funcionário já possui uma escala nesse período.");
+
+        verify(escalaRepository, never()).save(any(Escala.class));
+    }
+
+    @Test
     void criar_quandoFuncionarioNaoPossuiEspecialidade_rejeitaOperacao() {
         funcionario.setEspecialidades(Set.of());
         prepararVinculos();
@@ -141,6 +154,36 @@ class EscalaServiceTest {
         assertThat(resposta.especialidadeId()).isEqualTo(10L);
         assertThat(resposta.funcionarioId()).isEqualTo(20L);
         verify(escalaRepository).save(existente);
+    }
+
+    @Test
+    void atualizar_ignoraEscalaAtualNaVerificacaoDeConflito() {
+        Escala existente = new Escala();
+        existente.setId(1L);
+        when(escalaRepository.findById(1L)).thenReturn(Optional.of(existente));
+        prepararVinculos();
+        when(escalaRepository.save(any(Escala.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        escalaService.atualizar(1L, request(INICIO, FIM));
+
+        verify(escalaRepository).funcionarioPossuiEscalaConflitante(20L, INICIO, FIM, 1L);
+        verify(escalaRepository).save(existente);
+    }
+
+    @Test
+    void atualizar_quandoExisteOutraEscalaConflitante_rejeitaOperacao() {
+        Escala existente = new Escala();
+        existente.setId(1L);
+        when(escalaRepository.findById(1L)).thenReturn(Optional.of(existente));
+        prepararVinculos();
+        when(escalaRepository.funcionarioPossuiEscalaConflitante(
+                20L, INICIO, FIM, 1L)).thenReturn(true);
+
+        assertThatThrownBy(() -> escalaService.atualizar(1L, request(INICIO, FIM)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("O funcionário já possui uma escala nesse período.");
+
+        verify(escalaRepository, never()).save(any(Escala.class));
     }
 
     @Test
