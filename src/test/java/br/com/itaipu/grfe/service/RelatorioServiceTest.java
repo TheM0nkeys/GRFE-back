@@ -1,18 +1,13 @@
 package br.com.itaipu.grfe.service;
 
 import br.com.itaipu.grfe.dto.response.RelatorioAcionamentosResponse;
-import br.com.itaipu.grfe.entity.Chamado;
-import br.com.itaipu.grfe.entity.Departamento;
-import br.com.itaipu.grfe.entity.Divisao;
-import br.com.itaipu.grfe.entity.Especialidades;
-import br.com.itaipu.grfe.entity.Funcionario;
 import br.com.itaipu.grfe.repository.ChamadoRepository;
+import br.com.itaipu.grfe.repository.projecao.ContagemPorNome;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -35,11 +30,15 @@ class RelatorioServiceTest {
     void gerar_contabilizaESeparaChamadosNosQuatroAgrupamentos() {
         LocalDateTime inicio = LocalDateTime.of(2026, 10, 1, 0, 0);
         LocalDateTime fim = LocalDateTime.of(2026, 10, 20, 12, 0);
-        when(chamadoRepository.findAll(any(Specification.class))).thenReturn(List.of(
-                chamado("Redes", "Alice", "Operações", "Telecom"),
-                chamado("Redes", "Alice", "Operações", "Telecom"),
-                chamado("Banco de Dados", "Bruno", "Tecnologia", "Dados")
-        ));
+        when(chamadoRepository.contarNoPeriodo(inicio, fim)).thenReturn(3L);
+        when(chamadoRepository.contarPorEspecialidade(inicio, fim)).thenReturn(List.of(
+                new ContagemPorNome("Redes", 2L), new ContagemPorNome("Banco de Dados", 1L)));
+        when(chamadoRepository.contarPorPlantonista(inicio, fim)).thenReturn(List.of(
+                new ContagemPorNome("Alice", 2L), new ContagemPorNome("Bruno", 1L)));
+        when(chamadoRepository.contarPorDivisao(inicio, fim)).thenReturn(List.of(
+                new ContagemPorNome("Operações", 2L), new ContagemPorNome("Tecnologia", 1L)));
+        when(chamadoRepository.contarPorDepartamento(inicio, fim)).thenReturn(List.of(
+                new ContagemPorNome("Telecom", 2L), new ContagemPorNome("Dados", 1L)));
 
         RelatorioAcionamentosResponse resposta = relatorioService.gerar(inicio, fim);
 
@@ -54,12 +53,12 @@ class RelatorioServiceTest {
                 java.util.Map.of("Operações", 2L, "Tecnologia", 1L));
         assertThat(resposta.porDepartamento()).containsExactlyInAnyOrderEntriesOf(
                 java.util.Map.of("Telecom", 2L, "Dados", 1L));
-        verify(chamadoRepository).findAll(any(Specification.class));
+        verify(chamadoRepository).contarNoPeriodo(inicio, fim);
     }
 
     @Test
     void gerarSemanal_definePeriodoDeSeteDiasAteOMomentoDaGeracao() {
-        when(chamadoRepository.findAll(any(Specification.class))).thenReturn(List.of());
+        prepararRelatorioVazio();
         LocalDateTime antes = LocalDateTime.now();
 
         RelatorioAcionamentosResponse resposta = relatorioService.gerarSemanal();
@@ -69,12 +68,11 @@ class RelatorioServiceTest {
         assertThat(resposta.periodoInicio()).isEqualTo(resposta.periodoFim().minusDays(7));
         assertThat(resposta.totalAcionamentos()).isZero();
         assertThat(resposta.porEspecialidade()).isEmpty();
-        verify(chamadoRepository).findAll(any(Specification.class));
     }
 
     @Test
     void gerarMensal_iniciaNoPrimeiroDiaDoMesEConsideraOMesAtual() {
-        when(chamadoRepository.findAll(any(Specification.class))).thenReturn(List.of());
+        prepararRelatorioVazio();
         LocalDateTime antes = LocalDateTime.now();
 
         RelatorioAcionamentosResponse resposta = relatorioService.gerarMensal();
@@ -85,26 +83,23 @@ class RelatorioServiceTest {
                 YearMonth.from(resposta.periodoFim()).atDay(1).atStartOfDay());
         assertThat(resposta.totalAcionamentos()).isZero();
         assertThat(resposta.porPlantonista()).isEmpty();
-        verify(chamadoRepository).findAll(any(Specification.class));
     }
 
-    private Chamado chamado(String especialidadeNome,
-                            String plantonistaNome,
-                            String divisaoNome,
-                            String departamentoNome) {
-        Divisao divisao = new Divisao();
-        divisao.setNome(divisaoNome);
-        Departamento departamento = new Departamento();
-        departamento.setNome(departamentoNome);
-        Especialidades especialidade = new Especialidades();
-        especialidade.setNome(especialidadeNome);
-        especialidade.setDivisao(divisao);
-        especialidade.setDepartamento(departamento);
-        Funcionario plantonista = new Funcionario();
-        plantonista.setNome(plantonistaNome);
-        Chamado chamado = new Chamado();
-        chamado.setEspecialidade(especialidade);
-        chamado.setPlantonista(plantonista);
-        return chamado;
+    @Test
+    void gerar_comPeriodoInvertido_lancaArgumentoInvalido() {
+        LocalDateTime inicio = LocalDateTime.of(2026, 10, 20, 12, 0);
+        LocalDateTime fim = inicio.minusHours(1);
+
+        assertThat(org.assertj.core.api.Assertions.catchThrowable(() -> relatorioService.gerar(inicio, fim)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("A data final não pode ser anterior à data inicial.");
+    }
+
+    private void prepararRelatorioVazio() {
+        when(chamadoRepository.contarNoPeriodo(any(), any())).thenReturn(0L);
+        when(chamadoRepository.contarPorEspecialidade(any(), any())).thenReturn(List.of());
+        when(chamadoRepository.contarPorPlantonista(any(), any())).thenReturn(List.of());
+        when(chamadoRepository.contarPorDivisao(any(), any())).thenReturn(List.of());
+        when(chamadoRepository.contarPorDepartamento(any(), any())).thenReturn(List.of());
     }
 }

@@ -67,8 +67,8 @@ class EscalaRepositoryIntegrationTest {
     }
 
     @Test
-    void plantonistaEmEscala_noInstanteExatoDoFim_consideraLimiteInclusivo() {
-        assertThat(escalaRepository.plantonistaEmEscala(especialidade.getId(), funcionario.getId(), FIM)).isTrue();
+    void plantonistaEmEscala_noInstanteExatoDoFim_consideraFimExclusivo() {
+        assertThat(escalaRepository.plantonistaEmEscala(especialidade.getId(), funcionario.getId(), FIM)).isFalse();
     }
 
     @Test

@@ -13,7 +13,7 @@ import java.util.Optional;
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     @EntityGraph(attributePaths = "funcionario")
-    Optional<Usuario> findByLogin(String login);
+    Optional<Usuario> findByLoginIgnoreCase(String login);
 
     @Override
     @EntityGraph(attributePaths = "funcionario")

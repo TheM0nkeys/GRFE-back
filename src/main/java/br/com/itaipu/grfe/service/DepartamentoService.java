@@ -53,8 +53,14 @@ public class DepartamentoService {
     @Transactional
     public DepartamentoResponse atualizar(Long id, DepartamentoRequest request) {
         Departamento departamento = buscarEntidadePorId(id);
+        Divisao divisao = buscarDivisao(request.divisaoId());
+        if (!departamento.getDivisao().getId().equals(divisao.getId())
+                && !departamento.getEspecialidades().isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Não é possível alterar a divisão de um departamento que possui especialidades.");
+        }
         departamento.setNome(request.nome());
-        departamento.setDivisao(buscarDivisao(request.divisaoId()));
+        departamento.setDivisao(divisao);
         departamento = departamentoRepository.save(departamento);
         log.info("Departamento atualizado: id={}", id);
         return DepartamentoResponse.fromEntity(departamento);

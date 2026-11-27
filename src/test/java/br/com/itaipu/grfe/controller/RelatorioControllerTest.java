@@ -94,11 +94,10 @@ class RelatorioControllerTest {
     }
 
     @Test
-    void porPeriodo_semParametroObrigatorio_retorna500ConformeHandlerAtual() throws Exception {
+    void porPeriodo_semParametroObrigatorio_retorna400() throws Exception {
         mockMvc.perform(get("/relatorios").param("dataInicio", "2026-10-01T00:00:00"))
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.status").value(500))
-                .andExpect(jsonPath("$.mensagem").value("Erro interno inesperado"));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
     }
 
     private RelatorioAcionamentosResponse relatorioVazio() {

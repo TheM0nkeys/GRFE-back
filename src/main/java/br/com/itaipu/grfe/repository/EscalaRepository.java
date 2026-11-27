@@ -16,7 +16,7 @@ public interface EscalaRepository extends JpaRepository<Escala, Long> {
             where e.especialidade.id = :especialidadeId
               and e.funcionario.id = :funcionarioId
               and e.dataHoraInicio <= :momento
-              and e.dataHoraFim >= :momento
+              and e.dataHoraFim > :momento
             """)
     boolean plantonistaEmEscala(@Param("especialidadeId") Long especialidadeId,
                                 @Param("funcionarioId") Long funcionarioId,

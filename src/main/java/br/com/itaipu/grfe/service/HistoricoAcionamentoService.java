@@ -5,6 +5,7 @@ import br.com.itaipu.grfe.dto.response.HistoricoAcionamentoResponse;
 import br.com.itaipu.grfe.entity.Chamado;
 import br.com.itaipu.grfe.entity.Funcionario;
 import br.com.itaipu.grfe.entity.HistoricoAcionamento;
+import br.com.itaipu.grfe.entity.enums.StatusChamado;
 import br.com.itaipu.grfe.exception.EntidadeNaoEncontradaException;
 import br.com.itaipu.grfe.repository.ChamadoRepository;
 import br.com.itaipu.grfe.repository.FuncionarioRepository;
@@ -15,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 
@@ -27,12 +29,12 @@ public class HistoricoAcionamentoService {
     private final HistoricoAcionamentoRepository historicoAcionamentoRepository;
     private final ChamadoRepository chamadoRepository;
     private final FuncionarioRepository funcionarioRepository;
-    private final UsuarioLogado usuarioLogado;                                          // NOVO
+    private final UsuarioLogado usuarioLogado;
 
     public HistoricoAcionamentoService(HistoricoAcionamentoRepository historicoAcionamentoRepository,
                                        ChamadoRepository chamadoRepository,
                                        FuncionarioRepository funcionarioRepository,
-                                       UsuarioLogado usuarioLogado) {                   // NOVO
+                                       UsuarioLogado usuarioLogado) {
         this.historicoAcionamentoRepository = historicoAcionamentoRepository;
         this.chamadoRepository = chamadoRepository;
         this.funcionarioRepository = funcionarioRepository;
@@ -51,8 +53,11 @@ public class HistoricoAcionamentoService {
     @Transactional
     public HistoricoAcionamentoResponse registrar(Long chamadoId, HistoricoAcionamentoRequest request) {
         Chamado chamado = buscarChamado(chamadoId);
+        if (chamado.getStatus() == StatusChamado.FECHADO) {
+            throw new IllegalArgumentException("O acionamento está FECHADO e não pode receber novas atualizações.");
+        }
 
-        Long autorId = usuarioLogado.funcionarioId();                                   // CHANGED
+        Long autorId = usuarioLogado.funcionarioId();
         Funcionario autor = funcionarioRepository.findById(autorId)
                 .orElseThrow(() -> {
                     log.warn("Autor não encontrado ao registrar histórico: autorId={}", autorId);
@@ -60,6 +65,7 @@ public class HistoricoAcionamentoService {
                 });
 
         HistoricoAcionamento historico = request.toEntity();
+        historico.setDataHora(LocalDateTime.now());
         historico.setAutor(autor);
         historico.setChamado(chamado);
 

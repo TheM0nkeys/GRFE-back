@@ -5,12 +5,14 @@ import br.com.itaipu.grfe.dto.response.ChamadoResponse;
 import br.com.itaipu.grfe.entity.Chamado;
 import br.com.itaipu.grfe.entity.Especialidades;
 import br.com.itaipu.grfe.entity.Funcionario;
+import br.com.itaipu.grfe.entity.HistoricoAcionamento;
 import br.com.itaipu.grfe.entity.enums.StatusChamado;
 import br.com.itaipu.grfe.exception.EntidadeNaoEncontradaException;
 import br.com.itaipu.grfe.repository.ChamadoRepository;
 import br.com.itaipu.grfe.repository.EscalaRepository;
 import br.com.itaipu.grfe.repository.EspecialidadesRepository;
 import br.com.itaipu.grfe.repository.FuncionarioRepository;
+import br.com.itaipu.grfe.security.UsuarioLogado;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,6 +45,8 @@ class ChamadoServiceTest {
     private FuncionarioRepository funcionarioRepository;
     @Mock
     private EscalaRepository escalaRepository;
+    @Mock
+    private UsuarioLogado usuarioLogado;
     @InjectMocks
     private ChamadoService chamadoService;
 
@@ -64,10 +68,7 @@ class ChamadoServiceTest {
     @Test
     void criar_comPlantonistaEspecializadoEEmEscala_vinculaRelacoes() {
         ChamadoRequest request = request();
-        when(especialidadesRepository.findById(10L)).thenReturn(Optional.of(especialidade));
-        when(funcionarioRepository.findById(20L)).thenReturn(Optional.of(plantonista));
-        when(funcionarioRepository.findById(30L)).thenReturn(Optional.of(responsavel));
-        when(escalaRepository.plantonistaEmEscala(10L, 20L, MOMENTO)).thenReturn(true);
+        prepararCriacaoValida();
         when(chamadoRepository.save(any(Chamado.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         ChamadoResponse resposta = chamadoService.criar(request);
@@ -79,6 +80,18 @@ class ChamadoServiceTest {
         assertThat(chamadoCaptor.getValue().getUsuarioResponsavel()).isSameAs(responsavel);
         assertThat(resposta.status()).isEqualTo(StatusChamado.ABERTO);
         verify(escalaRepository).plantonistaEmEscala(10L, 20L, MOMENTO);
+    }
+
+    @Test
+    void criar_defineStatusInicialComoAberto() {
+        ChamadoRequest request = new ChamadoRequest(
+                MOMENTO, 10L, 20L, "Falha de rede", "INC123", StatusChamado.FECHADO);
+        prepararCriacaoValida();
+        when(chamadoRepository.save(any(Chamado.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ChamadoResponse resposta = chamadoService.criar(request);
+
+        assertThat(resposta.status()).isEqualTo(StatusChamado.ABERTO);
     }
 
     @Test
@@ -126,13 +139,14 @@ class ChamadoServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("O plantonista informado não está em escala para esta especialidade na data/hora do acionamento.");
 
-        verify(funcionarioRepository, never()).findById(30L);
+        verify(usuarioLogado, never()).funcionarioId();
     }
 
     @Test
     void criar_comResponsavelInexistente_lancaNaoEncontrado() {
         prepararPlantonista();
         when(escalaRepository.plantonistaEmEscala(10L, 20L, MOMENTO)).thenReturn(true);
+        when(usuarioLogado.funcionarioId()).thenReturn(30L);
         when(funcionarioRepository.findById(30L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> chamadoService.criar(request()))
@@ -143,7 +157,7 @@ class ChamadoServiceTest {
     @Test
     void atualizarStatus_atualizaEDevolveChamado() {
         Chamado chamado = chamadoExistente();
-        when(chamadoRepository.findById(1L)).thenReturn(Optional.of(chamado));
+        when(chamadoRepository.buscarParaAtualizar(1L)).thenReturn(Optional.of(chamado));
         when(chamadoRepository.save(chamado)).thenReturn(chamado);
 
         ChamadoResponse resposta = chamadoService.atualizarStatus(1L, StatusChamado.FECHADO);
@@ -155,7 +169,7 @@ class ChamadoServiceTest {
 
     @Test
     void atualizarStatus_comChamadoInexistente_lancaNaoEncontrado() {
-        when(chamadoRepository.findById(99L)).thenReturn(Optional.empty());
+        when(chamadoRepository.buscarParaAtualizar(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> chamadoService.atualizarStatus(99L, StatusChamado.FECHADO))
                 .isInstanceOf(EntidadeNaoEncontradaException.class)
@@ -189,24 +203,24 @@ class ChamadoServiceTest {
     void atualizar_comChamadoExistente_atualizaDados() {
         Chamado chamado = chamadoExistente();
         ChamadoRequest request = new ChamadoRequest(
-                MOMENTO.plusHours(1), 10L, 20L, 30L,
-                "Novo motivo", "INC-999", StatusChamado.FECHADO);
+                MOMENTO.plusHours(1), 10L, 20L,
+                "Novo motivo", "INC999", StatusChamado.FECHADO);
         prepararPlantonista();
         when(escalaRepository.plantonistaEmEscala(10L, 20L, MOMENTO.plusHours(1))).thenReturn(true);
-        when(funcionarioRepository.findById(30L)).thenReturn(Optional.of(responsavel));
-        when(chamadoRepository.findById(1L)).thenReturn(Optional.of(chamado));
+        when(chamadoRepository.buscarParaAtualizar(1L)).thenReturn(Optional.of(chamado));
         when(chamadoRepository.save(chamado)).thenReturn(chamado);
 
         ChamadoResponse resposta = chamadoService.atualizar(1L, request);
 
         assertThat(resposta.motivo()).isEqualTo("Novo motivo");
-        assertThat(resposta.numeroIncidente()).isEqualTo("INC-999");
+        assertThat(resposta.numeroIncidente()).isEqualTo("INC999");
         assertThat(resposta.status()).isEqualTo(StatusChamado.FECHADO);
+        assertThat(resposta.usuarioResponsavelId()).isEqualTo(30L);
     }
 
     @Test
     void atualizar_comChamadoInexistente_lancaNaoEncontrado() {
-        when(chamadoRepository.findById(99L)).thenReturn(Optional.empty());
+        when(chamadoRepository.buscarParaAtualizar(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> chamadoService.atualizar(99L, request()))
                 .isInstanceOf(EntidadeNaoEncontradaException.class);
@@ -214,8 +228,8 @@ class ChamadoServiceTest {
     }
 
     @Test
-    void deletar_comChamadoExistente_removeRegistro() {
-        when(chamadoRepository.existsById(1L)).thenReturn(true);
+    void deletar_comChamadoExistenteSemHistorico_removeRegistro() {
+        when(chamadoRepository.findById(1L)).thenReturn(Optional.of(chamadoExistente()));
 
         chamadoService.deletar(1L);
 
@@ -224,10 +238,22 @@ class ChamadoServiceTest {
 
     @Test
     void deletar_comChamadoInexistente_lancaNaoEncontrado() {
-        when(chamadoRepository.existsById(99L)).thenReturn(false);
+        when(chamadoRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> chamadoService.deletar(99L))
                 .isInstanceOf(EntidadeNaoEncontradaException.class);
+        verify(chamadoRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void deletar_comHistorico_lancaArgumentoInvalido() {
+        Chamado chamado = chamadoExistente();
+        chamado.getHistorico().add(new HistoricoAcionamento());
+        when(chamadoRepository.findById(1L)).thenReturn(Optional.of(chamado));
+
+        assertThatThrownBy(() -> chamadoService.deletar(1L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Não é possível excluir um acionamento que possui histórico.");
         verify(chamadoRepository, never()).deleteById(any());
     }
 
@@ -236,8 +262,15 @@ class ChamadoServiceTest {
         when(funcionarioRepository.findById(20L)).thenReturn(Optional.of(plantonista));
     }
 
+    private void prepararCriacaoValida() {
+        prepararPlantonista();
+        when(escalaRepository.plantonistaEmEscala(10L, 20L, MOMENTO)).thenReturn(true);
+        when(usuarioLogado.funcionarioId()).thenReturn(30L);
+        when(funcionarioRepository.findById(30L)).thenReturn(Optional.of(responsavel));
+    }
+
     private ChamadoRequest request() {
-        return new ChamadoRequest(MOMENTO, 10L, 20L, 30L, "Falha de rede", "INC-123", StatusChamado.ABERTO);
+        return new ChamadoRequest(MOMENTO, 10L, 20L, "Falha de rede", "INC123", StatusChamado.ABERTO);
     }
 
     private Chamado chamadoExistente() {

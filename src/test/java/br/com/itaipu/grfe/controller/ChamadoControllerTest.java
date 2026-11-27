@@ -112,7 +112,7 @@ class ChamadoControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"motivo\":\" \"}"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detalhes", hasSize(6)));
+                .andExpect(jsonPath("$.detalhes", hasSize(5)));
 
         verify(chamadoService, never()).criar(any(ChamadoRequest.class));
     }
@@ -123,7 +123,7 @@ class ChamadoControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"comentario\":\" \"}"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detalhes", hasSize(3)));
+                .andExpect(jsonPath("$.detalhes", hasSize(1)));
 
         verify(historicoAcionamentoService, never()).registrar(eq(7L), any());
     }
@@ -136,8 +136,8 @@ class ChamadoControllerTest {
     private String bodyChamadoValido() {
         return """
                 {"dataHoraAcionamento":"2026-10-19T08:00:00","especialidadeId":11,
-                 "plantonistaId":22,"usuarioResponsavelId":33,"motivo":"Falha de rede",
-                 "numeroIncidente":"INC-123","status":"ABERTO"}
+                 "plantonistaId":22,"motivo":"Falha de rede",
+                 "numeroIncidente":"INC123","status":"ABERTO"}
                 """;
     }
 }

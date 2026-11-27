@@ -4,6 +4,7 @@ import br.com.itaipu.grfe.entity.Chamado;
 import br.com.itaipu.grfe.entity.enums.StatusChamado;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 
 import java.time.LocalDateTime;
 
@@ -11,8 +12,8 @@ public record ChamadoRequest(
         @NotNull(message = "A data/hora do acionamento é obrigatória") LocalDateTime dataHoraAcionamento,
         @NotNull(message = "A especialidade acionada é obrigatória") Long especialidadeId,
         @NotNull(message = "O plantonista acionado é obrigatório") Long plantonistaId,
-        Long usuarioResponsavelId,
         @NotBlank(message = "O motivo do acionamento é obrigatório") String motivo,
+        @Pattern(regexp = "^INC\\d+$", message = "O número do incidente deve seguir o formato INC seguido de dígitos")
         String numeroIncidente,
         @NotNull(message = "O status do acionamento é obrigatório") StatusChamado status
 ) {
