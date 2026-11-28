@@ -24,8 +24,8 @@ public class UsuarioService {
 
     private static final Logger log = LoggerFactory.getLogger(UsuarioService.class);
 
-    private static final int TAMANHO_MINIMO_SENHA = 8;
-    private static final int LIMITE_BYTES_SENHA = 72;   // limite do BCrypt
+    private static final int TAMANHO_MINIMO_SENHA = 12;
+    private static final int LIMITE_BYTES_SENHA = 72;
 
     private final UsuarioRepository usuarioRepository;
     private final FuncionarioRepository funcionarioRepository;

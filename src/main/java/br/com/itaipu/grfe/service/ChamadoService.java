@@ -31,7 +31,7 @@ public class ChamadoService {
 
     private static final Logger log = LoggerFactory.getLogger(ChamadoService.class);
 
-    private static final int TAMANHO_MAXIMO_PAGINA = 100;                              // NOVO
+    private static final int TAMANHO_MAXIMO_PAGINA = 100;
 
     private static final String MSG_FECHADO =
             "O acionamento está FECHADO e não pode ser alterado. Solicite a reabertura a um administrador.";
@@ -109,7 +109,7 @@ public class ChamadoService {
 
     @Transactional
     public ChamadoResponse atualizarStatus(Long id, StatusChamado status) {
-        Chamado chamado = buscarEntidadeParaAtualizar(id);                              // CHANGED (trava)
+        Chamado chamado = buscarEntidadeParaAtualizar(id);
         exigirEditavel(chamado);
         validarTransicao(chamado, status);
         StatusChamado statusAnterior = chamado.getStatus();
@@ -123,6 +123,7 @@ public class ChamadoService {
     @Transactional
     public ChamadoResponse criar(ChamadoRequest request) {
         Chamado chamado = request.toEntity();
+        chamado.setStatus(StatusChamado.ABERTO);
         vincularRelacoes(chamado, request);
         chamado.setUsuarioResponsavel(buscarResponsavelLogado());
         chamado = chamadoRepository.save(chamado);
@@ -134,14 +135,14 @@ public class ChamadoService {
 
     @Transactional
     public ChamadoResponse atualizar(Long id, ChamadoRequest request) {
-        Chamado chamado = buscarEntidadeParaAtualizar(id);                              // CHANGED (trava)
+        Chamado chamado = buscarEntidadeParaAtualizar(id);
         exigirEditavel(chamado);
         validarTransicao(chamado, request.status());
         chamado.setDataHoraAcionamento(request.dataHoraAcionamento());
         chamado.setMotivo(request.motivo());
         chamado.setNumeroIncidente(request.numeroIncidente());
         chamado.setStatus(request.status());
-        vincularRelacoes(chamado, request);                                             // não troca o responsável
+        vincularRelacoes(chamado, request);
         chamado = chamadoRepository.save(chamado);
         log.info("Acionamento atualizado: id={}, status={}", id, request.status());
         return ChamadoResponse.fromEntity(chamado);
@@ -149,7 +150,7 @@ public class ChamadoService {
 
     @Transactional
     public ChamadoResponse reabrir(Long id) {
-        Chamado chamado = buscarEntidadeParaAtualizar(id);                              // CHANGED (trava)
+        Chamado chamado = buscarEntidadeParaAtualizar(id);
         if (chamado.getStatus() != StatusChamado.FECHADO) {
             log.warn("Tentativa de reabrir acionamento que não está FECHADO: id={}, status={}",
                     id, chamado.getStatus());
@@ -163,9 +164,10 @@ public class ChamadoService {
 
     @Transactional
     public void deletar(Long id) {
-        if (!chamadoRepository.existsById(id)) {
-            log.warn("Tentativa de excluir acionamento inexistente: id={}", id);
-            throw new EntidadeNaoEncontradaException("Acionamento não encontrado: " + id);
+        Chamado chamado = buscarEntidadePorId(id);
+        if (!chamado.getHistorico().isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Não é possível excluir um acionamento que possui histórico.");
         }
         chamadoRepository.deleteById(id);
         log.info("Acionamento removido: id={}", id);

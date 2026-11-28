@@ -1,14 +1,16 @@
 package br.com.itaipu.grfe.service;
 
-import br.com.itaipu.grfe.dto.response.HistoricoAcionamentoResponse;
 import br.com.itaipu.grfe.dto.request.HistoricoAcionamentoRequest;
+import br.com.itaipu.grfe.dto.response.HistoricoAcionamentoResponse;
 import br.com.itaipu.grfe.entity.Chamado;
 import br.com.itaipu.grfe.entity.Funcionario;
 import br.com.itaipu.grfe.entity.HistoricoAcionamento;
+import br.com.itaipu.grfe.entity.enums.StatusChamado;
 import br.com.itaipu.grfe.exception.EntidadeNaoEncontradaException;
 import br.com.itaipu.grfe.repository.ChamadoRepository;
 import br.com.itaipu.grfe.repository.FuncionarioRepository;
 import br.com.itaipu.grfe.repository.HistoricoAcionamentoRepository;
+import br.com.itaipu.grfe.security.UsuarioLogado;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -23,10 +25,10 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class HistoricoAcionamentoServiceTest {
@@ -37,6 +39,8 @@ class HistoricoAcionamentoServiceTest {
     private ChamadoRepository chamadoRepository;
     @Mock
     private FuncionarioRepository funcionarioRepository;
+    @Mock
+    private UsuarioLogado usuarioLogado;
     @InjectMocks
     private HistoricoAcionamentoService historicoAcionamentoService;
 
@@ -46,7 +50,7 @@ class HistoricoAcionamentoServiceTest {
         Funcionario autorb = funcionario(2L, "Bruno");
         HistoricoAcionamento maisRecente = historico(20L, LocalDateTime.of(2026, 10, 19, 11, 0), autorb, "Resolvido");
         HistoricoAcionamento maisAntigo = historico(10L, LocalDateTime.of(2026, 10, 19, 9, 0), autora, "Em análise");
-        Chamado chamado = new Chamado();
+        Chamado chamado = chamado(5L);
         chamado.setHistorico(new HashSet<>(Set.of(maisRecente, maisAntigo)));
         when(chamadoRepository.findById(5L)).thenReturn(Optional.of(chamado));
 
@@ -71,9 +75,9 @@ class HistoricoAcionamentoServiceTest {
     void registrar_comRelacoesExistentes_salvaEAssociaHistorico() {
         Chamado chamado = chamado(5L);
         Funcionario autor = funcionario(7L, "Ana");
-        HistoricoAcionamentoRequest request = new HistoricoAcionamentoRequest(
-                LocalDateTime.of(2026, 1, 1, 12, 0), 7L, "ok");
+        HistoricoAcionamentoRequest request = new HistoricoAcionamentoRequest("ok");
         when(chamadoRepository.findById(5L)).thenReturn(Optional.of(chamado));
+        when(usuarioLogado.funcionarioId()).thenReturn(7L);
         when(funcionarioRepository.findById(7L)).thenReturn(Optional.of(autor));
         when(historicoAcionamentoRepository.save(any())).thenAnswer(invocation -> {
             HistoricoAcionamento historico = invocation.getArgument(0);
@@ -81,10 +85,13 @@ class HistoricoAcionamentoServiceTest {
             return historico;
         });
 
+        LocalDateTime antes = LocalDateTime.now();
         var resposta = historicoAcionamentoService.registrar(5L, request);
+        LocalDateTime depois = LocalDateTime.now();
 
         assertThat(resposta.id()).isEqualTo(9L);
         assertThat(resposta.autorNome()).isEqualTo("Ana");
+        assertThat(resposta.dataHora()).isBetween(antes, depois);
         assertThat(chamado.getHistorico()).hasSize(1);
         verify(historicoAcionamentoRepository).save(any());
     }
@@ -94,19 +101,34 @@ class HistoricoAcionamentoServiceTest {
         when(chamadoRepository.findById(5L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> historicoAcionamentoService.registrar(5L,
-                new HistoricoAcionamentoRequest(LocalDateTime.now(), 7L, "ok")))
+                new HistoricoAcionamentoRequest("ok")))
                 .isInstanceOf(EntidadeNaoEncontradaException.class);
+        verify(usuarioLogado, never()).funcionarioId();
         verify(funcionarioRepository, never()).findById(any());
     }
 
     @Test
     void registrar_comAutorInexistente_naoSalvaHistorico() {
         when(chamadoRepository.findById(5L)).thenReturn(Optional.of(chamado(5L)));
+        when(usuarioLogado.funcionarioId()).thenReturn(7L);
         when(funcionarioRepository.findById(7L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> historicoAcionamentoService.registrar(5L,
-                new HistoricoAcionamentoRequest(LocalDateTime.now(), 7L, "ok")))
+                new HistoricoAcionamentoRequest("ok")))
                 .isInstanceOf(EntidadeNaoEncontradaException.class);
+        verify(historicoAcionamentoRepository, never()).save(any());
+    }
+
+    @Test
+    void registrar_comChamadoFechado_naoSalvaHistorico() {
+        Chamado chamado = chamado(5L);
+        chamado.setStatus(StatusChamado.FECHADO);
+        when(chamadoRepository.findById(5L)).thenReturn(Optional.of(chamado));
+
+        assertThatThrownBy(() -> historicoAcionamentoService.registrar(5L,
+                new HistoricoAcionamentoRequest("ok")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("O acionamento está FECHADO e não pode receber novas atualizações.");
         verify(historicoAcionamentoRepository, never()).save(any());
     }
 
@@ -129,6 +151,7 @@ class HistoricoAcionamentoServiceTest {
     private Chamado chamado(Long id) {
         Chamado chamado = new Chamado();
         chamado.setId(id);
+        chamado.setStatus(StatusChamado.ABERTO);
         chamado.setHistorico(new HashSet<>());
         return chamado;
     }

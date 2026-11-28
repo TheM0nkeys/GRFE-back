@@ -8,7 +8,7 @@ public record AlterarSenhaRequest(
         String senhaAtual,
 
         @NotBlank(message = "A nova senha é obrigatória")
-        @Size(min = 8, max = 72, message = "A senha deve ter entre 8 e 72 caracteres")
+        @Size(min = 12, max = 72, message = "A senha deve ter entre 12 e 72 caracteres")
         String novaSenha
 ) {
 

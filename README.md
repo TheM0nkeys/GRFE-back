@@ -5,10 +5,9 @@ API para gerenciar divisões, departamentos, especialidades, funcionários, esca
 ## Pré-requisitos
 
 - Java 17
-- Maven instalado e disponível no `PATH` (`mvn -version` para verificar)
 - PostgreSQL em execução
 
-Este repositório não inclui Maven Wrapper. Os comandos abaixo devem ser executados na pasta que contém este README e o `pom.xml`.
+Este repositório inclui Maven Wrapper. Os comandos abaixo devem ser executados na pasta que contém este README e o `pom.xml`.
 
 ## Banco de dados
 
@@ -43,7 +42,7 @@ Essas variáveis ficam disponíveis apenas na sessão atual do PowerShell. A mig
 Com o PostgreSQL ativo e as variáveis configuradas, inicie a API:
 
 ```powershell
-mvn spring-boot:run
+.\mvnw.cmd spring-boot:run
 ```
 
 Por padrão, a aplicação fica disponível em `http://localhost:8080`. A interface Swagger pode ser acessada em `http://localhost:8080/swagger-ui.html`; o documento OpenAPI fica em `http://localhost:8080/v3/api-docs`.
@@ -53,13 +52,13 @@ Por padrão, a aplicação fica disponível em `http://localhost:8080`. A interf
 Execute toda a suíte com:
 
 ```powershell
-mvn test
+.\mvnw.cmd test
 ```
 
 Os testes usam o perfil `test` e um banco H2 em memória; não precisam do PostgreSQL local. Para executar uma classe específica:
 
 ```powershell
-mvn "-Dtest=ChamadoServiceTest" test
+.\mvnw.cmd "-Dtest=ChamadoServiceTest" test
 ```
 
 ## Tecnologias

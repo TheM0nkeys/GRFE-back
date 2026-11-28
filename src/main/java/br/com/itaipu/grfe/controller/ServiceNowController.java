@@ -3,6 +3,7 @@ package br.com.itaipu.grfe.controller;
 import br.com.itaipu.grfe.dto.request.ServiceNowIncidentRequest;
 import br.com.itaipu.grfe.dto.response.ServiceNowIncidentResponse;
 import br.com.itaipu.grfe.service.ServiceNowService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +21,7 @@ public class ServiceNowController {
 
     @PostMapping("/incidentes")
     public ResponseEntity<ServiceNowIncidentResponse> criarIncidente(
-            @RequestBody ServiceNowIncidentRequest request) {
+            @RequestBody @Valid ServiceNowIncidentRequest request) {
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -30,7 +31,7 @@ public class ServiceNowController {
     @PatchMapping("/incidentes/{sysId}")
     public ResponseEntity<ServiceNowIncidentResponse> atualizarIncidente(
             @PathVariable String sysId,
-            @RequestBody ServiceNowIncidentRequest request) {
+            @RequestBody @Valid ServiceNowIncidentRequest request) {
 
         return ResponseEntity.ok(
                 serviceNowService.atualizarIncidente(sysId, request)

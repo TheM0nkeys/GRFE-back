@@ -3,6 +3,7 @@ package br.com.itaipu.grfe.service;
 import br.com.itaipu.grfe.dto.request.DepartamentoRequest;
 import br.com.itaipu.grfe.entity.Departamento;
 import br.com.itaipu.grfe.entity.Divisao;
+import br.com.itaipu.grfe.entity.Especialidades;
 import br.com.itaipu.grfe.exception.EntidadeNaoEncontradaException;
 import br.com.itaipu.grfe.repository.DepartamentoRepository;
 import br.com.itaipu.grfe.repository.DivisaoRepository;
@@ -115,6 +116,28 @@ class DepartamentoServiceTest {
 
         assertEquals("Novo", resposta.nome());
         assertEquals(2L, resposta.divisaoId());
+    }
+
+
+    @Test
+    void atualizar_quandoPossuiEspecialidades_naoPermiteTrocarDivisao() {
+        Divisao antiga = divisao(1L, "Antiga");
+        Divisao nova = divisao(2L, "Nova");
+        Departamento departamento = departamento(10L, "Infra", antiga);
+        departamento.getEspecialidades().add(new Especialidades());
+        when(departamentoRepository.findById(10L)).thenReturn(Optional.of(departamento));
+        when(divisaoRepository.findById(2L)).thenReturn(Optional.of(nova));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.atualizar(10L, new DepartamentoRequest("Infra", 2L))
+        );
+
+        assertEquals(
+                "Não é possível alterar a divisão de um departamento que possui especialidades.",
+                exception.getMessage()
+        );
+        verify(departamentoRepository, never()).save(any());
     }
 
     @Test

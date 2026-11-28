@@ -111,6 +111,17 @@ class ServiceNowControllerTest {
     }
 
     @Test
+    void criarIncidente_comBodyInvalido_retorna400() throws Exception {
+        mockMvc.perform(post("/integracao/servicenow/incidentes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"short_description":" ","impact":"9","urgency":"9"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
     void criarIncidente_quandoClientFalha_retorna503ComErroPadronizado() throws Exception {
         when(serviceNowClient.criarIncidente(
                 any(ServiceNowIncidentRequest.class)

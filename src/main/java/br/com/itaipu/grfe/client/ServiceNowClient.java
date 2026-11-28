@@ -1,5 +1,6 @@
 package br.com.itaipu.grfe.client;
 
+import br.com.itaipu.grfe.config.ServiceNowFeignConfig;
 import br.com.itaipu.grfe.dto.request.ServiceNowIncidentRequest;
 import br.com.itaipu.grfe.dto.response.ServiceNowIncidentResponse;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -10,7 +11,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 @FeignClient(
         name = "serviceNowClient",
-        url = "${servicenow.url}"
+        url = "${servicenow.url}",
+        configuration = ServiceNowFeignConfig.class
 )
 public interface ServiceNowClient {
 

@@ -27,7 +27,7 @@ public class Usuario {
     private Role role;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "funcionario_id")
+    @JoinColumn(name = "funcionario_id", unique = true)
     private Funcionario funcionario;
 
 }

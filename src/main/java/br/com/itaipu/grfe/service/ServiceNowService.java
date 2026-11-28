@@ -10,6 +10,7 @@ import br.com.itaipu.grfe.exception.EntidadeNaoEncontradaException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import br.com.itaipu.grfe.exception.ServiceNowIndisponivelException;
+import feign.FeignException;
 
 import java.util.regex.Pattern;
 
@@ -37,12 +38,23 @@ public class ServiceNowService {
         try {
             return serviceNowClient.criarIncidente(request);
 
+        } catch (FeignException ex) {
+            if (ex.status() == 400 || ex.status() == 422) {
+                throw new IllegalArgumentException("ServiceNow rejeitou os dados enviados para o incidente.");
+            }
+            log.warn(
+                    "Falha ao criar incidente no ServiceNow: {}",
+                    ex.getMessage()
+            );
+            throw new ServiceNowIndisponivelException(
+                    "Não foi possível criar o incidente no ServiceNow.",
+                    ex
+            );
         } catch (Exception ex) {
             log.warn(
                     "Falha ao criar incidente no ServiceNow: {}",
                     ex.getMessage()
             );
-
             throw new ServiceNowIndisponivelException(
                     "Não foi possível criar o incidente no ServiceNow.",
                     ex
@@ -60,13 +72,25 @@ public class ServiceNowService {
                     request
             );
 
+        } catch (FeignException ex) {
+            if (ex.status() == 400 || ex.status() == 422) {
+                throw new IllegalArgumentException("ServiceNow rejeitou os dados enviados para o incidente.");
+            }
+            log.warn(
+                    "Falha ao atualizar incidente no ServiceNow: sysId={}, erro={}",
+                    sysId,
+                    ex.getMessage()
+            );
+            throw new ServiceNowIndisponivelException(
+                    "Não foi possível atualizar o incidente no ServiceNow.",
+                    ex
+            );
         } catch (Exception ex) {
             log.warn(
                     "Falha ao atualizar incidente no ServiceNow: sysId={}, erro={}",
                     sysId,
                     ex.getMessage()
             );
-
             throw new ServiceNowIndisponivelException(
                     "Não foi possível atualizar o incidente no ServiceNow.",
                     ex

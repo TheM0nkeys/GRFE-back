@@ -28,7 +28,7 @@ class UsuarioDetailsServiceTest {
 
     @Test
     void loadUserByUsername_usuarioExistente_retornaUserDetails() {
-        when(usuarioRepository.findByLogin("admin"))
+        when(usuarioRepository.findByLoginIgnoreCase("admin"))
                 .thenReturn(Optional.of(Usuarios.criar("admin", Role.ADMIN)));
 
         UserDetails detalhes = usuarioDetailsService.loadUserByUsername("admin");
@@ -39,7 +39,7 @@ class UsuarioDetailsServiceTest {
 
     @Test
     void loadUserByUsername_usuarioInexistente_lancaUsernameNotFoundException() {
-        when(usuarioRepository.findByLogin("fantasma")).thenReturn(Optional.empty());
+        when(usuarioRepository.findByLoginIgnoreCase("fantasma")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> usuarioDetailsService.loadUserByUsername("fantasma"))
                 .isInstanceOf(UsernameNotFoundException.class)

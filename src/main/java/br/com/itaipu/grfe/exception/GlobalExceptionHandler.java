@@ -130,7 +130,8 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(erro);
-    // ===== NOVO: início =====
+    }
+
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ErroResponse> handleParametroAusente(MissingServletRequestParameterException ex) {
         log.warn("Parâmetro obrigatório ausente: {}", ex.getParameterName());
